@@ -8,28 +8,35 @@ public class Tones {
 		new Tones(args);
 	}
 
-	int channels = 1;
-	AudioFormat.Encoding enc = AudioFormat.Encoding.PCM_SIGNED;
-	int frameRate = 44100;
-	int mBitSampleSize = 16;
-	int sFrameSize = mBitSampleSize / 8 * channels;
-	boolean bigEndian = false;
-	AudioFormat af = new AudioFormat(enc, frameRate, mBitSampleSize, channels, sFrameSize, frameRate, bigEndian);
-	float volume = 1F;
-	long frames = 0L;
+	// private final static int VOLUME_FADE_PERIOD = 500;
+	// private final static float MAX_VOLUME = 1F;
+	// private boolean volumeProgress = true;
+	// private float volume = 0F;
+	private float volume = 1F;
+	private long frames = 0L;
+	private SourceDataLine sourceDataLine = null;
+	private final static int BUFFER_SIZE = Sound.SAMPLE_RATE / 100;
+	private float[] freqs;
+	//move source files to ./src
 
 	public Tones(String args[]) {
-		
-		SourceDataLine sourceDataLine = null;
-		DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
+		AudioFormat af = new AudioFormat(Sound.ENCODING,
+										 Sound.SAMPLE_RATE,
+										 Sound.SAMPLE_SIZE_IN_BITS,
+										 Sound.CHANNELS, //test 2 channels and fix both classes
+										 Sound.FRAME_SIZE,
+										 Sound.FRAME_RATE,
+										 Sound.BIG_ENDIAN);
 		try {
+			DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
 		    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
 		    sourceDataLine.open(af);
+			sourceDataLine.start();
 		} catch (LineUnavailableException ex) {
 		    System.out.println("The line is unavailable");
 		}
-		sourceDataLine.start();
 
+		//make a simple gui
 		ArrayList<Float> freqsList = new ArrayList<Float>();
 		for(String arg: args) {
 			Float freq = null;
@@ -38,60 +45,89 @@ public class Tones {
 			} catch(Exception ex) {System.out.println("Argument is unparsable");}
 			freqsList.add(freq);
 		}
-		float[] freqs = new float[freqsList.size()];
+		freqs = new float[freqsList.size()];
 		for(int i = 0; i < freqs.length; i++) {
 			freqs[i] = freqsList.get(i);
 		}
 
-		byte[] data = getData(freqs, 1);
+		boolean init = true;
+		byte[] data = null;
 		while(true) {
-			if(sourceDataLine.available() >= data.length) {
-				data = getData(freqs, 1);
+			if((init) || (sourceDataLine.available() >= data.length)) { //fading effect
+				updateVolume();
+				data = getData(freqs, volume, frames, BUFFER_SIZE);
+				frames += BUFFER_SIZE;
 				sourceDataLine.write(data, 0, data.length);
+				init = false;
+				decreaseFrames();
 			}
 		}
 	}
 
-	private short[] getData(float frequency, int neededFrames) {
-		float amplitude = (float) (volume * (Math.pow(2, mBitSampleSize - 1) - 1));
-		int frames = Math.round(frameRate / frequency);
-		short[] data = new short[neededFrames];
-		int initFrame = (int) (this.frames % frames);
-		int completedFrames = 0;
-		for(int frame = initFrame; frame < frames; frame++) {
-			float phase = ((float) frame) / ((float) frames);
-			float sin = (float) Math.sin(2 * Math.PI * phase);
-			short pressure = (short) Math.round(sin * amplitude);
-			data[completedFrames] = pressure;
-			if(++completedFrames >= neededFrames) break;
-		}
-		while(completedFrames < neededFrames) {
-			for(int frame = 0; frame < frames; frame++) {
-				float phase = ((float) frame) / ((float) frames);
-				float sin = (float) Math.sin(2 * Math.PI * phase);
-				short pressure = (short) Math.round(sin * amplitude);
-				data[completedFrames] = pressure;
-				if(++completedFrames >= neededFrames) break;
-			}
-		}
-		return data;
+	private void updateVolume() {
+		// float updatesPerMillisecond = ((float) Sound.FRAME_RATE) / BUFFER_SIZE / 1000;
+		// float volumeFadeChunk = MAX_VOLUME / (VOLUME_FADE_PERIOD * updatesPerMillisecond);
+		// if((volumeProgress) && (volume < MAX_VOLUME)) {
+		// 	if((volume + volumeFadeChunk) <= MAX_VOLUME) {
+		// 		volume += volumeFadeChunk;
+		// 	} else {
+		// 		volume = MAX_VOLUME;
+		// 	}
+		// 	System.out.println("new volume: " + volume);
+		// }
 	}
 
-	private byte[] getData(float[] frequencies, int newFrames) {
+	private void decreaseFrames() {
+		int[] framesArray = new int[freqs.length];
+		for(int i = 0; i < freqs.length; i++) {
+			framesArray[i] = Math.round(Sound.FRAME_RATE / freqs[i]);
+		}
+		long lcm = framesArray[0];
+		for(int i = 1; i < framesArray.length; i++) {
+			long a = lcm; long b = framesArray[i];
+			while(b > 0) {
+				long tmp = b;
+				b = a % b;
+				a = tmp;
+			}
+			long gcd = a;
+			if(lcm > Long.MAX_VALUE / Sound.FRAME_RATE) {
+				lcm = -1;
+				break;
+			}
+			lcm *= (framesArray[i] / gcd);
+		}
+		if((frames >= lcm) && (lcm != -1)) {
+			frames = frames %= lcm;
+		}
+	}
+
+	private byte[] getData(float[] frequencies, float volume, long frames, int newFrames) {
 		short[] data = new short[newFrames];
 		for(float frequency: frequencies) {
-			short[] currentData = getData(frequency, newFrames);
+			short[] currentData = getFrequencyData(frequency, volume, frames, newFrames);
 			for(int i = 0; i < currentData.length; i++) {
 				data[i] += (currentData[i] / frequencies.length);
 			}
 		}
-		frames += newFrames;
-		byte[] finalData = new byte[newFrames * sFrameSize];
+		for(short pressure: data) {
+			System.out.print(pressure + " ");
+		}
+		System.out.println();
+		
+		byte[] finalData = new byte[newFrames * Sound.FRAME_SIZE];
 		ByteBuffer buffer = ByteBuffer.wrap(finalData).order(ByteOrder.LITTLE_ENDIAN);
 		for(int i = 0; i < data.length; i++) {
 			buffer.putShort(data[i]);
 		}
 		buffer.flip();
+
 		return finalData;
+	}
+
+	private short[] getFrequencyData(float frequency, float volume, long frames, int neededFrames) {
+		Sound sound = new Sound(frequency);
+		short[] data = sound.generateOutputData(volume, frames, neededFrames);
+		return data;
 	}
 }
