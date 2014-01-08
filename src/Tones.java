@@ -23,22 +23,26 @@ public class Tones extends Window {
 
 		VBox vbox = new VBox(false, 0);
 		vbox.add(frequencyEntry = new Entry());
-		HBox buttons = new HBox(false, 0); //parameters? explore docs
+		HBox buttons = new HBox(false, 0);
 		buttons.add(playButton = new Button("Play"));
 		playButton.connect(new Button.Clicked() {
 			public void onClicked(Button button) {
 				if(!playing) {
 					float[] freqs = parseFreqs(frequencyEntry.getText());
-					player = new Player(freqs);
-					playing = true;
+					if(freqs.length > 0) {
+						player = new Player(freqs);
+						playing = true;
+					}
 				}
 			}
 		});
 		buttons.add(stopButton = new Button("Stop"));
 		stopButton.connect(new Button.Clicked() {
 			public void onClicked(Button button) {
-				player.stopSound();
-				playing = false;
+				if(player != null) {
+					player.stopSound();
+					playing = false;
+				}
 			}
 		});
 		vbox.add(buttons);
@@ -56,7 +60,7 @@ public class Tones extends Window {
 			try {
 				Float freq = Float.parseFloat(token);
 				freqsList.add(freq);
-			} catch(Exception ex) {} //handle only one more special exception
+			} catch(Exception ex) {}
 		}
 		float[] freqsArray = new float[freqsList.size()];
 		for(int i = 0; i < freqsArray.length; i++) {

@@ -5,9 +5,12 @@ import java.util.ArrayList;
 
 public class Player extends Thread {
 	private static SourceDataLine sourceDataLine = null;
-	private final static int BUFFER_SIZE = Sound.FRAME_RATE / 100;
+	private final static int BUFFER_CHUNK_SIZE = Sound.FRAME_RATE / 100;
+	private final static int BUFFER_SIZE = BUFFER_CHUNK_SIZE * 10;
 	private boolean running;
 	private float freqs[];
+	private Volume volume;
+	private long frames;
 
 	public static void init() {
 		AudioFormat af = new AudioFormat(Sound.ENCODING,
@@ -20,7 +23,7 @@ public class Player extends Thread {
 		try {
 			DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
 		    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
-		    sourceDataLine.open(af);
+		    sourceDataLine.open(af, BUFFER_SIZE);
 			sourceDataLine.start();
 		} catch (LineUnavailableException ex) {
 		    System.out.println("The line is unavailable");
@@ -35,25 +38,31 @@ public class Player extends Thread {
 
 	public void stopSound() {
 		if(running) {
-			sourceDataLine.flush(); //how to flush the buffer correctly?
-			running = false;
+			volume.fadeOut(frames);
 		}
 	}
 
+	private void destroySound() {
+		sourceDataLine.flush();
+		sourceDataLine.stop();
+	}
+
 	public void run() {
-		long frames = 0L;
-		Volume volume = new Volume();
-		boolean init = true;
+		frames = 0L;
+		volume = new Volume();
 		byte[] data = null;
+		boolean init = true;
 		running = true;
 		while(running) {
 			if((init) || (sourceDataLine.available() >= data.length)) {
-				data = getData(freqs, volume, frames, BUFFER_SIZE);
-				frames += BUFFER_SIZE;
+				data = getData(freqs, volume, frames, BUFFER_CHUNK_SIZE);
+				frames += BUFFER_CHUNK_SIZE;
 				sourceDataLine.write(data, 0, data.length);
 				init = false;
 			}
+			running = volume.getRunning();
 		}
+		destroySound();
 	}
 
 	private byte[] getData(float[] frequencies, Volume volume, long frames, int newFrames) {
