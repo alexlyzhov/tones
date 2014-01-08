@@ -1,133 +1,92 @@
-import javax.sound.sampled.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import org.gnome.gtk.*;
+import org.gnome.gdk.Event;
 import java.util.ArrayList;
 
-public class Tones {
+public class Tones extends Window {
 	public static void main(String args[]) {
+		Gtk.init(args);
 		new Tones(args);
 	}
 
-	// private final static int VOLUME_FADE_PERIOD = 500;
-	// private final static float MAX_VOLUME = 1F;
-	// private boolean volumeProgress = true;
-	// private float volume = 0F;
-	private float volume = 1F;
-	private long frames = 0L;
-	private SourceDataLine sourceDataLine = null;
-	private final static int BUFFER_SIZE = Sound.SAMPLE_RATE / 100;
-	private float[] freqs;
-	//move source files to ./src
+	private Entry frequencyEntry;
+	private Button playButton, stopButton;
+	private Player player;
+	private boolean playing = false;
 
-	public Tones(String args[]) {
-		AudioFormat af = new AudioFormat(Sound.ENCODING,
-										 Sound.SAMPLE_RATE,
-										 Sound.SAMPLE_SIZE_IN_BITS,
-										 Sound.CHANNELS, //test 2 channels and fix both classes
-										 Sound.FRAME_SIZE,
-										 Sound.FRAME_RATE,
-										 Sound.BIG_ENDIAN);
-		try {
-			DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
-		    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
-		    sourceDataLine.open(af);
-			sourceDataLine.start();
-		} catch (LineUnavailableException ex) {
-		    System.out.println("The line is unavailable");
-		}
+	public Tones(String[] args) {
+		hide();
+		setTitle("Tones");
+		destroyOnDelete();
+		setTonesIcon();
 
-		//make a simple gui
+		player.init();
+
+		VBox vbox = new VBox(false, 0);
+		vbox.add(frequencyEntry = new Entry());
+		HBox buttons = new HBox(false, 0); //parameters? explore docs
+		buttons.add(playButton = new Button("Play"));
+		playButton.connect(new Button.Clicked() {
+			public void onClicked(Button button) {
+				if(!playing) {
+					float[] freqs = parseFreqs(frequencyEntry.getText());
+					player = new Player(freqs);
+					playing = true;
+				}
+			}
+		});
+		buttons.add(stopButton = new Button("Stop"));
+		stopButton.connect(new Button.Clicked() {
+			public void onClicked(Button button) {
+				player.stopSound();
+				playing = false;
+			}
+		});
+		vbox.add(buttons);
+
+		add(vbox);
+		showAll();
+		setCenterLocation();
+		Gtk.main(); //include windows and mac gtk native libraries
+	}
+
+	private float[] parseFreqs(String text) {
 		ArrayList<Float> freqsList = new ArrayList<Float>();
-		for(String arg: args) {
-			Float freq = null;
+		String[] tokens = text.split(" ");
+		for(String token: tokens) {
 			try {
-				freq = Float.parseFloat(arg);
-			} catch(Exception ex) {System.out.println("Argument is unparsable");}
-			freqsList.add(freq);
+				Float freq = Float.parseFloat(token);
+				freqsList.add(freq);
+			} catch(Exception ex) {} //handle only one more special exception
 		}
-		freqs = new float[freqsList.size()];
-		for(int i = 0; i < freqs.length; i++) {
-			freqs[i] = freqsList.get(i);
+		float[] freqsArray = new float[freqsList.size()];
+		for(int i = 0; i < freqsArray.length; i++) {
+			freqsArray[i] = freqsList.get(i);
 		}
-
-		boolean init = true;
-		byte[] data = null;
-		while(true) {
-			if((init) || (sourceDataLine.available() >= data.length)) { //fading effect
-				updateVolume();
-				data = getData(freqs, volume, frames, BUFFER_SIZE);
-				frames += BUFFER_SIZE;
-				sourceDataLine.write(data, 0, data.length);
-				init = false;
-				decreaseFrames();
-			}
-		}
+		return freqsArray;
 	}
 
-	private void updateVolume() {
-		// float updatesPerMillisecond = ((float) Sound.FRAME_RATE) / BUFFER_SIZE / 1000;
-		// float volumeFadeChunk = MAX_VOLUME / (VOLUME_FADE_PERIOD * updatesPerMillisecond);
-		// if((volumeProgress) && (volume < MAX_VOLUME)) {
-		// 	if((volume + volumeFadeChunk) <= MAX_VOLUME) {
-		// 		volume += volumeFadeChunk;
-		// 	} else {
-		// 		volume = MAX_VOLUME;
-		// 	}
-		// 	System.out.println("new volume: " + volume);
-		// }
+	public void destroyOnDelete() {
+		connect(new Window.DeleteEvent() {
+			public boolean onDeleteEvent(Widget source, Event event) {
+				source.destroy();
+				return false;
+			}
+		});
 	}
 
-	private void decreaseFrames() {
-		int[] framesArray = new int[freqs.length];
-		for(int i = 0; i < freqs.length; i++) {
-			framesArray[i] = Math.round(Sound.FRAME_RATE / freqs[i]);
-		}
-		long lcm = framesArray[0];
-		for(int i = 1; i < framesArray.length; i++) {
-			long a = lcm; long b = framesArray[i];
-			while(b > 0) {
-				long tmp = b;
-				b = a % b;
-				a = tmp;
-			}
-			long gcd = a;
-			if(lcm > Long.MAX_VALUE / Sound.FRAME_RATE) {
-				lcm = -1;
-				break;
-			}
-			lcm *= (framesArray[i] / gcd);
-		}
-		if((frames >= lcm) && (lcm != -1)) {
-			frames = frames %= lcm;
-		}
+	private void setTonesIcon() {
+		//find icon, put it in ./ico and set it here
+		// try {
+		// 	Pixbuf icon = new Pixbuf("ico/" + ico);
+		// 	w.setIcon(icon);
+		// } catch(Exception ex) {ex.printStackTrace();}
 	}
 
-	private byte[] getData(float[] frequencies, float volume, long frames, int newFrames) {
-		short[] data = new short[newFrames];
-		for(float frequency: frequencies) {
-			short[] currentData = getFrequencyData(frequency, volume, frames, newFrames);
-			for(int i = 0; i < currentData.length; i++) {
-				data[i] += (currentData[i] / frequencies.length);
-			}
-		}
-		for(short pressure: data) {
-			System.out.print(pressure + " ");
-		}
-		System.out.println();
-		
-		byte[] finalData = new byte[newFrames * Sound.FRAME_SIZE];
-		ByteBuffer buffer = ByteBuffer.wrap(finalData).order(ByteOrder.LITTLE_ENDIAN);
-		for(int i = 0; i < data.length; i++) {
-			buffer.putShort(data[i]);
-		}
-		buffer.flip();
-
-		return finalData;
-	}
-
-	private short[] getFrequencyData(float frequency, float volume, long frames, int neededFrames) {
-		Sound sound = new Sound(frequency);
-		short[] data = sound.generateOutputData(volume, frames, neededFrames);
-		return data;
+	private void setCenterLocation() {
+		int sw = getScreen().getWidth();
+		int sh = getScreen().getHeight();
+		int x = (sw - getWidth()) / 2;
+		int y = (sh - getHeight()) / 2;
+		move(x, y);
 	}
 }
