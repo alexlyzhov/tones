@@ -1,10 +1,11 @@
 import javafx.application.Application;
-import javafx.stage.Stage;
-import javafx.scene.Scene;
+import javafx.stage.*;
+import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.event.*;
+import javax.sound.sampled.LineUnavailableException;
 
 public class Tones extends Application {
 	public static void main(String args[]) {
@@ -12,12 +13,16 @@ public class Tones extends Application {
 	}
 
 	private Player player;
-	private boolean playing = false;
 	private Track.ToneSystem toneSystem;
-	private Text logText;
+	private Log log;
 
 	public void start(Stage primaryStage) {
-		player.init();
+		try {
+			player = new Player();
+		} catch(LineUnavailableException ex) {
+			fatalError("Player line is unavailable");
+		}
+
 		primaryStage.setTitle("Tones");
 		VBox vbox = new VBox();
 
@@ -47,42 +52,52 @@ public class Tones extends Application {
 		Button playButton = new Button("Play");
 		playButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-                if(!playing) {
-                	try {
-                		Track newTrack = new Track(frequencyField.getText(), toneSystem);
-                		log("Frequencies are interpreted as " + newTrack.getFreqsText());
-                		player = new Player(newTrack);
-                		playing = true;
-                	} catch(InvalidTrackDataException ex) {
-                		log(ex.toString());
-                	}
-				}
+            	try {
+            		Track newTrack = new Track(frequencyField.getText(), toneSystem);
+            		log.write("Frequencies are interpreted as " + newTrack.getFreqsText());
+            		player.play(newTrack);
+            	} catch(InvalidTrackDataException | IllegalPlayerActionException ex) {
+            		log.write(ex.toString());
+            	}
             }
         });
         hbox.getChildren().add(playButton);
 		Button stopButton = new Button("Stop");
 		stopButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-                if(player != null) {
-					player.stopSound();
-					playing = false;
-				}
+            	try {
+            		player.stop();
+            	} catch(IllegalPlayerActionException ex) {
+            		log.write(ex.toString());
+            	}
             }
         });
         hbox.getChildren().add(stopButton);
         vbox.getChildren().add(hbox);
 
-        logText = new Text();
-        vbox.getChildren().add(logText);
+        log = new Log();
+        vbox.getChildren().add(log);
         
         primaryStage.setScene(new Scene(vbox, 500, 500));
         primaryStage.show();
 	}
 
-	private void log(String string) {
-		String currentText = logText.getText();
-		currentText += string;
-		currentText += "\n";
-		logText.setText(currentText);
+	private void fatalError(String string) {
+		Stage dialogStage = new Stage();
+		dialogStage.initModality(Modality.WINDOW_MODAL);
+		dialogStage.initStyle(StageStyle.UTILITY);
+		dialogStage.setTitle("Error");
+		VBox vbox = new VBox();
+		Text stringText = new Text(string);
+		Button okButton = new Button("OK");
+		okButton.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+				System.exit(1);
+            }
+        });
+		vbox.getChildren().add(stringText);
+        vbox.getChildren().add(okButton);
+		dialogStage.setScene(new Scene(vbox));
+		dialogStage.show();
 	}
 }

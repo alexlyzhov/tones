@@ -10,6 +10,18 @@ public class Sound {
 	public final static int FRAME_RATE = SAMPLE_RATE;
 	public final static boolean BIG_ENDIAN = false;
 
+	public static AudioFormat getAudioFormat() {
+		AudioFormat af = new AudioFormat(ENCODING,
+										 SAMPLE_RATE,
+										 SAMPLE_SIZE_IN_BITS,
+										 CHANNELS,
+										 FRAME_SIZE,
+										 FRAME_RATE,
+										 BIG_ENDIAN
+										);
+		return af;
+	}
+
 	private static class FunctionData {
 		float phase;
 		float sin;
