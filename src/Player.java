@@ -30,9 +30,8 @@ public class Player extends Thread {
 		}		
 	}
 
-	public Player(final float freqs[]) {
-		init();
-		this.freqs = freqs;
+	public Player(Track track) {
+		this.freqs = track.getFreqs();
 		start();
 	}
 
