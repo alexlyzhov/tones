@@ -23,12 +23,12 @@ public class Sound {
 	}
 
 	private static class FunctionData {
-		float phase;
-		float sin;
+		double phase;
+		double sin;
 
-		public FunctionData(float phase) {
+		public FunctionData(double phase) {
 			this.phase = phase;
-			this.sin = (float) Math.sin(2 * Math.PI * phase);
+			this.sin = (double) Math.sin(2 * Math.PI * phase);
 		}
 
 		public FunctionData(FunctionData functionData) {
@@ -36,7 +36,7 @@ public class Sound {
 			this.sin = functionData.sin;
 		}
 
-		public short getPressure(float amplitude) {
+		public short getPressure(double amplitude) {
 			short pressure = (short) Math.round(sin * amplitude);
 			return pressure;
 		}
@@ -46,16 +46,16 @@ public class Sound {
 	FunctionData[] functionData;
 	Volume volume;
 
-	public Sound(float frequency, Volume volume) {
+	public Sound(double frequency, Volume volume) {
 		this.volume = volume;
-		period = Math.round(FRAME_RATE / frequency);
+		period = (int) Math.round(FRAME_RATE / frequency);
 		functionData = generateFunctionData();
 	}
 
 	private FunctionData[] generateFunctionData() {
 		functionData = new FunctionData[period];
 		for(int frame = 0; frame < period; frame++) {
-			float phase = ((float) frame) / period;
+			double phase = ((double) frame) / period;
 			functionData[frame] = new FunctionData(phase);
 		}
 		return functionData;
@@ -89,12 +89,12 @@ public class Sound {
 
 	private short getSoundData(long frames) {
 		int frame = (int) (frames % period);
-		float amplitude = getAmplitude(volume.getVolume(frames));
+		double amplitude = getAmplitude(volume.getVolume(frames));
 		return functionData[frame].getPressure(amplitude);
 	}
 
-	public static float getAmplitude(float volume) {
-		float amplitude = (float) (volume * (Math.pow(2, SAMPLE_SIZE_IN_BITS - 1) - 1));
+	public static double getAmplitude(double volume) {
+		double amplitude = (double) (volume * (Math.pow(2, SAMPLE_SIZE_IN_BITS - 1) - 1));
 		return amplitude;
 	}
 }

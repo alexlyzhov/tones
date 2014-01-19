@@ -20,7 +20,7 @@ public class Tones extends Application {
 		try {
 			player = new Player();
 		} catch(LineUnavailableException ex) {
-			fatalError("Player line is unavailable");
+			fatalError("The player line is unavailable");
 		}
 
 		primaryStage.setTitle("Tones");
@@ -33,12 +33,12 @@ public class Tones extends Application {
 		equalTemperamentRadioButton.setToggleGroup(toggleGroup);
 		harmonicSeriesRadioButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-               toneSystem = Track.ToneSystem.HARMONIC;
+                toneSystem = Track.ToneSystem.HARMONIC;
             }
         });
-		harmonicSeriesRadioButton.setOnAction(new EventHandler<ActionEvent>() {
+		equalTemperamentRadioButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-               toneSystem = Track.ToneSystem.TEMPERED;
+                toneSystem = Track.ToneSystem.TEMPERED;
             }
         });
 		vbox.getChildren().add(harmonicSeriesRadioButton);

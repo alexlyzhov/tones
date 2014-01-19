@@ -4,7 +4,7 @@ import java.nio.ByteOrder;
 
 public class PlayerRunnable implements Runnable {
 	private SourceDataLine sourceDataLine;
-	private float[] freqs;
+	private double[] freqs;
 	private Volume volume;
 	private long frames;
 
@@ -36,9 +36,9 @@ public class PlayerRunnable implements Runnable {
 		sourceDataLine.stop();
 	}
 
-	private byte[] getData(float[] frequencies, Volume volume, long frames, int newFrames) {
+	private byte[] getData(double[] frequencies, Volume volume, long frames, int newFrames) {
 		short[] data = new short[newFrames];
-		for(float frequency: frequencies) {
+		for(double frequency: frequencies) {
 			short[] currentData = getFrequencyData(frequency, volume, frames, newFrames);
 			for(int i = 0; i < currentData.length; i++) {
 				data[i] += (currentData[i] / frequencies.length);
@@ -57,7 +57,7 @@ public class PlayerRunnable implements Runnable {
 		return finalData;
 	}
 
-	private short[] getFrequencyData(float frequency, Volume volume, long frames, int neededFrames) {
+	private short[] getFrequencyData(double frequency, Volume volume, long frames, int neededFrames) {
 		Sound sound = new Sound(frequency, volume);
 		short[] data = sound.generateOutputData(frames, neededFrames);
 		return data;

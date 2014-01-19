@@ -3,45 +3,63 @@ import java.util.ArrayList;
 public class Track {
 	public enum ToneSystem {
 		HARMONIC, TEMPERED;
+
+		private double countFrequency(double prev, int semitones) {
+			switch(this) {
+				case HARMONIC:
+					boolean addition = (semitones >= 0);
+					if(!addition) {
+						semitones = -semitones;
+					}
+					double freqRatio = Math.pow(2, (semitones / 12));
+					if(freqRatio < 1) freqRatio = 1;
+					double overtone = 0;
+					if(addition) {
+						overtone = prev * freqRatio;
+					} else {
+						overtone = prev / freqRatio;
+					}
+					semitones %= 12;
+					double[] intervals = {1, (16d/15), (9d/8), (6d/5), (5d/4), (4d/3), (45d/32), (3d/2), (8d/5), (5d/3), (16d/9), (15d/8), 2};
+					if(addition) {
+						overtone *= intervals[semitones];
+					} else {
+						overtone /= intervals[semitones];
+					}
+					return overtone;
+				case TEMPERED:
+					double temperedFreqRatio = Math.pow(Math.pow(2, (1d / 12)), semitones);
+					return prev * temperedFreqRatio;
+				default:
+					System.out.println("unknown toneSystem"); //learn how to deal with this situation properly
+					return 0;
+			}
+		}
 	}
-	private float[] freqs;
+	private double[] freqs;
+	private ToneSystem toneSystem;
 
 	public Track(String text, ToneSystem toneSystem) throws InvalidTrackDataException {
-		this.freqs = parseFreqs(text, toneSystem);
+		this.toneSystem = toneSystem;
+		this.freqs = parseFreqs(text);
 	}
 
-	private float[] parseFreqs(String text, ToneSystem toneSystem) throws InvalidTrackDataException {
-		ArrayList<Float> freqsList = new ArrayList<Float>();
-		float prev = 0;
+	private double[] parseFreqs(String text) throws InvalidTrackDataException {
+		ArrayList<Double> freqsList = new ArrayList<Double>();
+		double prev = 0;
 		String[] tokens = text.split(" ");
 		for(String token: tokens) {
-			if(!token.equals("")) {
+			if(!token.equals("")) { //process empty strings earlier
 				try {
-					float freq = 0;
+					double freq = 0;
 					if(token.endsWith("s")) {
-						int semitones = Integer.parseInt(token.substring(1, token.length() - 1));
-						float freqAlteration = 0;
-						if(toneSystem == ToneSystem.HARMONIC) {
-							freqAlteration = prev;
-							for(int i = 1; i < semitones; i++) {
-								freqAlteration *= (1 / 15);
-							}
-						} else if(toneSystem == ToneSystem.TEMPERED) {
-							freqAlteration = semitones * ((float) Math.pow((double) 2, (double) 1 / 12));
-						}
 						if(prev == 0) {
 							throw new InvalidTrackDataTokenException(token);
-						} else {
-							if(token.startsWith("+")) {
-								freq = prev + freqAlteration;
-							} else if(token.startsWith("-")) {
-								freq = prev - freqAlteration;
-							} else {
-								throw new InvalidTrackDataTokenException(token);
-							}
 						}
+						int semitones = Integer.parseInt(token.substring(0, token.length() - 1));
+						freq = toneSystem.countFrequency(prev, semitones);
 					} else {
-						freq = Float.parseFloat(token);
+						freq = Double.parseDouble(token);
 					}
 					freqsList.add(freq);
 					prev = freq;
@@ -53,23 +71,23 @@ public class Track {
 		if(freqsList.size() == 0) {
 			throw new InvalidTrackDataException("No track data was found");
 		}
-		float[] freqsArray = new float[freqsList.size()];
+		double[] freqsArray = new double[freqsList.size()];
 		for(int i = 0; i < freqsArray.length; i++) {
 			freqsArray[i] = freqsList.get(i);
 		}
-		return freqsArray;
+		return freqsArray; //return a list of chords
 	}
 
-	public String getFreqsText() {
+	public String getFreqsText() { //temporary
 		StringBuffer text = new StringBuffer();
-		for(float freq: freqs) {
+		for(double freq: freqs) {
 			text.append(freq);
 			text.append(" ");
 		}
 		return text.toString();
 	}
 
-	public float[] getFreqs() {
+	public double[] getFreqs() {
 		return freqs;
 	}
 }
