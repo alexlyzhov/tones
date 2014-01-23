@@ -2,14 +2,15 @@ public class Volume {
 	private enum EnvelopeStage {FADE_IN, PLATEAU, FADE_OUT, NULL}
 	private EnvelopeStage envelopeStage;
 
-	private final static int VOLUME_FADE_PERIOD = 50;
 	private final static double MAX_VOLUME = 1F;
 	private double linearVolume = 0F;
 	private double logarithmicVolume = 0F;
+	private int fadeDuration;
 	private double fadeOutInitFrame;
 
-	public Volume() {
-		envelopeStage = EnvelopeStage.FADE_IN;
+	public Volume(int fadeDuration) {
+		this.fadeDuration = fadeDuration;
+		this.envelopeStage = EnvelopeStage.FADE_IN;
 	}
 
 	public double getVolume(long frames) {
@@ -18,8 +19,10 @@ public class Volume {
 	}
 
 	public void fadeOut(long frame) {
-		envelopeStage = EnvelopeStage.FADE_OUT;
-		fadeOutInitFrame = frame;
+		if(envelopeStage != EnvelopeStage.FADE_OUT) {
+			envelopeStage = EnvelopeStage.FADE_OUT;
+			fadeOutInitFrame = frame;
+		}
 	}
 
 	public boolean getRunning() {
@@ -27,7 +30,7 @@ public class Volume {
 	}
 
 	private void updateVolume(long frames) {
-		double fadeSeconds = (double) VOLUME_FADE_PERIOD / 1000;
+		double fadeSeconds = (double) fadeDuration / 1000;
 		int fadeFrames = (int) (fadeSeconds * Sound.SAMPLE_RATE);
 		final double FADE_BASE = (double) Math.E;
 

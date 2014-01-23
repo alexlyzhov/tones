@@ -13,8 +13,9 @@ public class Tones extends Application {
 	}
 
 	private Player player;
-	private Track.ToneSystem toneSystem;
+	private ToneSystem toneSystem;
 	private Log log;
+	private TextField frequencyField;
 
 	public void start(Stage primaryStage) {
 		try {
@@ -33,19 +34,19 @@ public class Tones extends Application {
 		equalTemperamentRadioButton.setToggleGroup(toggleGroup);
 		harmonicSeriesRadioButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-                toneSystem = Track.ToneSystem.HARMONIC;
+                toneSystem = ToneSystem.HARMONIC;
             }
         });
 		equalTemperamentRadioButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-                toneSystem = Track.ToneSystem.TEMPERED;
+                toneSystem = ToneSystem.TEMPERED;
             }
         });
 		vbox.getChildren().add(harmonicSeriesRadioButton);
 		vbox.getChildren().add(equalTemperamentRadioButton);
 		harmonicSeriesRadioButton.fire();
 
-		final TextField frequencyField = new TextField();
+		frequencyField = new TextField();
 		vbox.getChildren().add(frequencyField);
 
         HBox hbox = new HBox();
@@ -53,8 +54,9 @@ public class Tones extends Application {
 		playButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
             	try {
-            		Track newTrack = new Track(frequencyField.getText(), toneSystem);
-            		log.write("Frequencies are interpreted as " + newTrack.getFreqsText());
+            		Track newTrack = createTrack();
+            		log.write("Playing new track");
+            		log.write(newTrack.toString());
             		player.play(newTrack);
             	} catch(InvalidTrackDataException | IllegalPlayerActionException ex) {
             		log.write(ex.toString());
@@ -82,7 +84,39 @@ public class Tones extends Application {
         primaryStage.show();
 	}
 
-	private void fatalError(String string) {
+	private Track createTrack() throws InvalidTrackDataException {
+		Chord chord = new Chord();
+		double prev = 0;
+		String[] tokens = frequencyField.getText().split(" ");
+		for(String token: tokens) {
+			if(!token.equals("")) { //process empty strings earlier
+				try {
+					double freq = 0;
+					if(token.endsWith("s")) {
+						if(prev == 0) {
+							throw new InvalidTrackDataTokenException(token);
+						}
+						int semitones = Integer.parseInt(token.substring(0, token.length() - 1));
+						freq = toneSystem.countFrequency(prev, semitones);
+					} else {
+						freq = Double.parseDouble(token);
+					}
+					chord.add(freq);
+					prev = freq;
+				} catch(NumberFormatException ex) {
+					throw new InvalidTrackDataTokenException(token);
+				}
+			}
+		}
+		Track track = new Track(3000);
+		track.add(chord);
+		if(track.size() == 0) {
+			throw new InvalidTrackDataException("No track data was found");
+		}
+		return track;
+	}
+
+	private void fatalError(String string) { //test
 		Stage dialogStage = new Stage();
 		dialogStage.initModality(Modality.WINDOW_MODAL);
 		dialogStage.initStyle(StageStyle.UTILITY);
