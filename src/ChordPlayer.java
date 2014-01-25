@@ -1,87 +1,137 @@
 import javax.sound.sampled.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 public class ChordPlayer {
+	private class Cycle {
+		private final int BUFFER_SIZE = Player.BUFFER_SIZE * 100;
+		private Chord chord;
+		private EnvelopeStage envelopeStage;
+		private double volume;
+		private int maxFrames, fadeInFrames, fadeOutFrames;
+		private short[] buffer;
+		private int fadeOutInitFrame;
+
+		public Cycle(Chord chord) {
+			this.chord = chord;
+			maxFrames = getFrames(chord.getActivePlayDuration());
+			fadeInFrames = getFrames(chord.getFadeInDuration());
+			fadeOutFrames = getFrames(chord.getFadeOutDuration());
+			envelopeStage = EnvelopeStage.FADE_IN;
+			volume = 0D;
+		}
+
+		private int getFrames(int millisDuration) {
+			return (int) (millisDuration / 1000d * Player.FRAME_RATE);
+		}
+
+		public short getFrameData(int frame) {
+			updateVolume(frame);
+			short result = 0;
+			for(int i = 0; i < chord.size(); i++) {
+				Frequency frequency = chord.getFrequency(i);
+				short data = frequency.getData(frame, volume);
+				result += (data / chord.size());
+			}
+			return result;
+		}
+
+		private void updateVolume(int frame) {
+			if((frame >= maxFrames - fadeOutFrames) && (envelopeStage == EnvelopeStage.PLATEAU)) {
+				fadeOut();
+			}
+			if(envelopeStage == EnvelopeStage.FADE_IN) {
+				double phase = 0;
+				if(fadeInFrames == 0) {
+					phase = 1;
+				} else {
+					phase = ((double) frame) / fadeInFrames;
+				}
+				double linearVolume = phase;
+				this.volume = getLogarithmicVolume(linearVolume);
+				if(linearVolume == 1D) {
+					envelopeStage = EnvelopeStage.PLATEAU;
+				}
+			} else if(envelopeStage == EnvelopeStage.FADE_OUT) {
+				if(fadeOutInitFrame == -1) {
+					fadeOutInitFrame = frame;
+				}
+				double phase = ((double) (frame - fadeOutInitFrame)) / fadeOutFrames;
+				double linearVolume = 1 - phase;
+				this.volume = getLogarithmicVolume(linearVolume);
+				if(linearVolume == 0D) {
+					envelopeStage = EnvelopeStage.NULL;
+				}
+			}
+		}
+
+		private double getLogarithmicVolume(double linearVolume) {
+			final double FADE_BASE = Math.E;
+			return (Math.pow(FADE_BASE, linearVolume) - 1) / (FADE_BASE - 1);
+		}
+
+		public void fadeOut() {
+			fadeOutInitFrame = -1;
+			envelopeStage = EnvelopeStage.FADE_OUT;
+		}
+
+		public int getMaxFrames() {
+			return maxFrames;
+		}
+	}
+
+	private enum EnvelopeStage {FADE_IN, PLATEAU, FADE_OUT, NULL}
 	private SourceDataLine sourceDataLine;
-	private Volume volume;
 	private Chord chord;
-	private int duration, preDelay, postDelay, fadeDuration;
+	private Cycle cycle;
 
-	private long frames;
-
-	public ChordPlayer(SourceDataLine sourceDataLine, Chord chord, int duration, int preDelay, int postDelay, int fadeDuration) {
-		//test 0 fadeDuration
+	public ChordPlayer(SourceDataLine sourceDataLine, Chord chord) {
 		this.sourceDataLine = sourceDataLine;
 		this.chord = chord;
-		this.duration = duration;
-		this.preDelay = preDelay;
-		this.postDelay = postDelay;
-		this.fadeDuration = fadeDuration;
+		cycle = new Cycle(chord);
 	}
 
 	public void play() {
 		try {
-			Thread.sleep(preDelay);
+			Thread.sleep(chord.getPreDelay());
 		} catch(InterruptedException ex) {ex.printStackTrace();}
 
-		volume = new Volume(fadeDuration);
-		frames = 0L;
-		int activePlayDuration = duration - preDelay - postDelay - fadeDuration;
-
-		byte[] data = null;
-		boolean running = true;
-		boolean activePlay = true;
-		long startTime = System.currentTimeMillis();
-		while(running) {
-			if(activePlay && ((startTime + activePlayDuration) <= System.currentTimeMillis())) {
-				volume.fadeOut(frames);
-				activePlay = false;
+		long activePlayStartTime = System.currentTimeMillis();
+		int frames = 0;
+		while(frames < cycle.getMaxFrames()) {
+			if(sourceDataLine.available() >= Player.BUFFER_CHUNK_SIZE) {
+				int framesToGet = Math.min(Player.BUFFER_CHUNK_SIZE, cycle.getMaxFrames() - frames);
+				short[] shortData = new short[framesToGet];
+				for(int i = 0; i < shortData.length; i++) {
+					shortData[i] = cycle.getFrameData(frames + i);
+				}
+				byte[] byteData = getByteData(shortData);
+				frames += shortData.length;
+				sourceDataLine.write(byteData, 0, byteData.length);
 			}
-			if((data == null) || (sourceDataLine.available() >= data.length)) {
-				data = getData(chord, volume, frames, Player.BUFFER_CHUNK_SIZE);
-				frames += Player.BUFFER_CHUNK_SIZE;
-				sourceDataLine.write(data, 0, data.length);
-			}
-			running = volume.getRunning(); //not strategically correct, there should be some event processing
 		}
-		sourceDataLine.flush(); //try to omit and see what happens
+		sourceDataLine.flush();
 
 		try {
-			Thread.sleep(postDelay);
+			Thread.sleep(chord.getPostDelay());
 		} catch(InterruptedException ex) {ex.printStackTrace();}
 	}
 
-	public void fadeOut() {
-		volume.fadeOut(frames);
-	}
-
-	private byte[] getData(Chord chord, Volume volume, long frames, int newFrames) {
-		short[] data = new short[newFrames];
-		for(int i = 0; i < chord.size(); i++) {
-			double frequency = chord.getFrequency(i).getValue();
-			short[] currentData = getFrequencyData(frequency, volume, frames, newFrames);
-			for(int j = 0; j < currentData.length; j++) {
-				// System.out.println("cl " + currentData.length + " cd " + currentData[i] + " cs " + chord.size());
-				data[j] += (currentData[j] / chord.size());
-			}
-		}
-		
-		byte[] finalData = new byte[newFrames * Sound.FRAME_SIZE];
-		ByteBuffer buffer = ByteBuffer.wrap(finalData).order(ByteOrder.LITTLE_ENDIAN);
-		for(int i = 0; i < data.length; i++) {
-			for(int channel = 0; channel < Sound.CHANNELS; channel++) {
-				buffer.putShort(data[i]);
+	private byte[] getByteData(short[] shortData) {
+		byte[] byteData = new byte[shortData.length * Player.FRAME_SIZE];
+		ByteOrder byteOrder = Player.BIG_ENDIAN ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+		ByteBuffer buffer = ByteBuffer.wrap(byteData).order(byteOrder);
+		for(int i = 0; i < shortData.length; i++) {
+			for(int channel = 0; channel < Player.CHANNELS; channel++) {
+				buffer.putShort(shortData[i]);
 			}
 		}
 		buffer.flip();
-
-		return finalData;
+		return byteData;
 	}
 
-	private short[] getFrequencyData(double frequency, Volume volume, long frames, int neededFrames) {
-		Sound sound = new Sound(frequency, volume);
-		short[] data = sound.generateOutputData(frames, neededFrames);
-		return data;
+	public void fadeOut() {
+		cycle.fadeOut();
 	}
 }

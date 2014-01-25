@@ -1,56 +1,51 @@
 import javax.sound.sampled.*;
 
 public class Player {
-	public final static int BUFFER_CHUNK_SIZE = Sound.FRAME_RATE / 100; //place constants in chordplayer
+	public final static AudioFormat.Encoding ENCODING = AudioFormat.Encoding.PCM_SIGNED;
+	public final static int SAMPLE_RATE = 44100;
+	public final static int SAMPLE_SIZE_IN_BITS = 16;
+	public final static int CHANNELS = 2; //one channel is enough?
+	public final static int FRAME_SIZE = SAMPLE_SIZE_IN_BITS / 8 * CHANNELS;
+	public final static int FRAME_RATE = SAMPLE_RATE;
+	public final static boolean BIG_ENDIAN = false;
+	public final static int BUFFER_CHUNK_SIZE = FRAME_RATE / 100;
 	public final static int BUFFER_SIZE = BUFFER_CHUNK_SIZE * 10;
 	private SourceDataLine sourceDataLine = null;
-	private ChordPlayer chordPlayer = null;
-	private Thread playingThread = null;
-	private boolean halting = false;
+	private TrackPlayer trackPlayer = null;
 
-	public Player() throws LineUnavailableException {
-		AudioFormat af = Sound.getAudioFormat();
-		DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
-	    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
-	    sourceDataLine.open(af, BUFFER_SIZE);
+	public static AudioFormat getAudioFormat() {
+		AudioFormat af = new AudioFormat(ENCODING, SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, FRAME_SIZE, FRAME_RATE, BIG_ENDIAN);
+		return af;
 	}
 
-	public void play(final Track track) throws IllegalPlayerActionException {
+	public Player() throws InitFailedPlayerException {
+		try {
+			AudioFormat af = getAudioFormat();
+			DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
+		    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
+		    sourceDataLine.open(af, BUFFER_SIZE);
+		} catch(LineUnavailableException ex) {
+			throw new InitFailedPlayerException("A source data line is not available. The player could not be initialized.");
+		}
+	}
+
+	public void play(final Track track) throws IllegalActionPlayerException {
 		if(isPlaying()) {
-			throw new IllegalPlayerActionException("The player has already started playback");
+			throw new IllegalActionPlayerException("The player has already started playback");
 		}
-		final int chordDuration = (int) (track.getDuration() / track.size());
-		playingThread = new Thread() {
-			public void run() {
-				sourceDataLine.start();
-				for(int i = 0; i < track.size(); i++) {
-					Chord chord = track.getChord(i);
-					chordPlayer = new ChordPlayer(sourceDataLine, chord, chordDuration, 50, 50, 200); //create new internal Thread class
-					chordPlayer.play();
-					if(halting) {
-						halting = false;
-						break;
-					}
-				}
-				sourceDataLine.stop();
-			}
-		};
-		playingThread.start();
+		trackPlayer = new TrackPlayer(sourceDataLine, track);
+		Thread trackPlayerThread = new Thread(trackPlayer);
+		trackPlayerThread.start();
 	}
 
-	public void stop() throws IllegalPlayerActionException {
+	public void stop() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
-			throw new IllegalPlayerActionException("The player has already stopped playback");
+			throw new IllegalActionPlayerException("The player has already stopped playback");
 		}
-		halting = true;
-		chordPlayer.fadeOut(); //this should stop all playing
+		trackPlayer.fadeOut();
 	}
 
-	private boolean isPlaying() { //check sourceDataLine or just variable playing here
-		// return (sourceDataLine.isActive()); //isAlive()
-		if((playingThread == null) || (!playingThread.isAlive())) {
-			return false;
-		}
-		return true;
+	private boolean isPlaying() {
+		return (sourceDataLine.isActive());
 	}
 }

@@ -28,7 +28,7 @@ public enum ToneSystem {
 				double temperedFreqRatio = Math.pow(Math.pow(2, (1d / 12)), semitones);
 				return prev * temperedFreqRatio;
 			default:
-				System.out.println("unknown toneSystem"); //learn how to deal with this situation properly
+				System.out.println("unknown toneSystem");
 				return 0;
 		}
 	}
