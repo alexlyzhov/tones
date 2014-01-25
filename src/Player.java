@@ -4,7 +4,7 @@ public class Player {
 	public final static AudioFormat.Encoding ENCODING = AudioFormat.Encoding.PCM_SIGNED;
 	public final static int SAMPLE_RATE = 44100;
 	public final static int SAMPLE_SIZE_IN_BITS = 16;
-	public final static int CHANNELS = 2; //one channel is enough?
+	public final static int CHANNELS = 1;
 	public final static int FRAME_SIZE = SAMPLE_SIZE_IN_BITS / 8 * CHANNELS;
 	public final static int FRAME_RATE = SAMPLE_RATE;
 	public final static boolean BIG_ENDIAN = false;
@@ -42,7 +42,7 @@ public class Player {
 		if(!isPlaying()) {
 			throw new IllegalActionPlayerException("The player has already stopped playback");
 		}
-		trackPlayer.fadeOut();
+		trackPlayer.stop();
 	}
 
 	private boolean isPlaying() {

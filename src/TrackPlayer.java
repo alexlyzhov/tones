@@ -21,8 +21,8 @@ public class TrackPlayer implements Runnable {
 		sourceDataLine.stop();
 	}
 
-	public void fadeOut() {
+	public void stop() {
 		finishPlaying = true;
-		chordPlayer.fadeOut();
+		chordPlayer.stop();
 	}
 }

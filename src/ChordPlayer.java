@@ -11,7 +11,8 @@ public class ChordPlayer {
 		private double volume;
 		private int maxFrames, fadeInFrames, fadeOutFrames;
 		private short[] buffer;
-		private int fadeOutInitFrame;
+		private int fadeOutInitFrame; double fadeOutInitPhase;
+		private boolean fadeOutFlag;
 
 		public Cycle(Chord chord) {
 			this.chord = chord;
@@ -38,29 +39,38 @@ public class ChordPlayer {
 		}
 
 		private void updateVolume(int frame) {
-			if((frame >= maxFrames - fadeOutFrames) && (envelopeStage == EnvelopeStage.PLATEAU)) {
+			if((frame >= maxFrames - fadeOutFrames - 1) && (envelopeStage == EnvelopeStage.PLATEAU)) {
 				fadeOut();
 			}
-			if(envelopeStage == EnvelopeStage.FADE_IN) {
-				double phase = 0;
-				if(fadeInFrames == 0) {
-					phase = 1;
+			if(fadeOutFlag) {
+				fadeOutInitFrame = frame;
+				if(envelopeStage == EnvelopeStage.PLATEAU) {
+					fadeOutInitPhase = 0;
+				} else if(envelopeStage == EnvelopeStage.FADE_IN) {
+					double fadeInPhase = (fadeInFrames != 0) ? ((double) frame) / fadeInFrames : 1;
+					fadeOutInitPhase = 1 - fadeInPhase;
 				} else {
-					phase = ((double) frame) / fadeInFrames;
+					System.out.println("invalid envelope stage");
 				}
+				envelopeStage = EnvelopeStage.FADE_OUT;
+				fadeOutFlag = false;
+			}
+			if(envelopeStage == EnvelopeStage.FADE_IN) {
+				double phase = (fadeInFrames != 0) ? ((double) frame) / fadeInFrames : 1;
 				double linearVolume = phase;
-				this.volume = getLogarithmicVolume(linearVolume);
-				if(linearVolume == 1D) {
+				if(linearVolume < 1D) {
+					this.volume = getLogarithmicVolume(linearVolume);
+				} else {
+					this.volume = 1;
 					envelopeStage = EnvelopeStage.PLATEAU;
 				}
 			} else if(envelopeStage == EnvelopeStage.FADE_OUT) {
-				if(fadeOutInitFrame == -1) {
-					fadeOutInitFrame = frame;
-				}
-				double phase = ((double) (frame - fadeOutInitFrame)) / fadeOutFrames;
+				double phase = (fadeOutFrames != 0) ? (fadeOutInitPhase + ((double) (frame - fadeOutInitFrame)) / fadeOutFrames) : 1;
 				double linearVolume = 1 - phase;
-				this.volume = getLogarithmicVolume(linearVolume);
-				if(linearVolume == 0D) {
+				if(linearVolume > 0D) {
+					this.volume = getLogarithmicVolume(linearVolume);
+				} else {
+					this.volume = 0;
 					envelopeStage = EnvelopeStage.NULL;
 				}
 			}
@@ -72,12 +82,15 @@ public class ChordPlayer {
 		}
 
 		public void fadeOut() {
-			fadeOutInitFrame = -1;
-			envelopeStage = EnvelopeStage.FADE_OUT;
+			fadeOutFlag = true;
 		}
 
 		public int getMaxFrames() {
 			return maxFrames;
+		}
+
+		public boolean isAlive() {
+			return (envelopeStage != EnvelopeStage.NULL);
 		}
 	}
 
@@ -85,6 +98,8 @@ public class ChordPlayer {
 	private SourceDataLine sourceDataLine;
 	private Chord chord;
 	private Cycle cycle;
+	private boolean playing;
+	private int frames;
 
 	public ChordPlayer(SourceDataLine sourceDataLine, Chord chord) {
 		this.sourceDataLine = sourceDataLine;
@@ -98,8 +113,12 @@ public class ChordPlayer {
 		} catch(InterruptedException ex) {ex.printStackTrace();}
 
 		long activePlayStartTime = System.currentTimeMillis();
-		int frames = 0;
-		while(frames < cycle.getMaxFrames()) {
+		frames = 0;
+		playing = true;
+		while(cycle.isAlive() && playing) {
+			if(frames > cycle.getMaxFrames()) {
+				System.out.println("max frames exceeded");
+			}
 			if(sourceDataLine.available() >= Player.BUFFER_CHUNK_SIZE) {
 				int framesToGet = Math.min(Player.BUFFER_CHUNK_SIZE, cycle.getMaxFrames() - frames);
 				short[] shortData = new short[framesToGet];
@@ -111,7 +130,7 @@ public class ChordPlayer {
 				sourceDataLine.write(byteData, 0, byteData.length);
 			}
 		}
-		sourceDataLine.flush();
+		// sourceDataLine.flush();
 
 		try {
 			Thread.sleep(chord.getPostDelay());
@@ -131,7 +150,7 @@ public class ChordPlayer {
 		return byteData;
 	}
 
-	public void fadeOut() {
-		cycle.fadeOut();
+	public void stop() {
+		playing = false;
 	}
 }
