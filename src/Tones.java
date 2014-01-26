@@ -7,6 +7,8 @@ import javafx.scene.text.*;
 import javafx.event.*;
 import javax.sound.sampled.LineUnavailableException;
 import java.util.ArrayList;
+import javafx.beans.value.*;
+import javafx.geometry.*;
 
 public class Tones extends Application {
 	private Player player;
@@ -25,11 +27,23 @@ public class Tones extends Application {
 
 	private class TonesWindow extends Stage { //later make a nice gui including all the debug info in itself
 		private VBox vbox = new VBox();
-		private TextField frequencyField, durationField, innerDelayField, chordFadeIntervalField, trackFadeIntervalField;
+		private TextField frequencyField;
+		private Slider durationSlider, innerDelaySlider, chordFadeIntervalSlider, trackFadeIntervalSlider; //fadeDuration
 		private RadioButton harmonicSeriesRadioButton, equalTemperamentRadioButton;
+		private final double initialTrackDuration = 2D;
 
 		public TonesWindow() {
 			setTitle("Tones");
+			vbox.setSpacing(3);
+			vbox.setAlignment(Pos.CENTER);
+	        vbox.setPadding(new Insets(10, 10, 10, 10));
+
+			Text tonesText = new Text("tones");
+			tonesText.setFont(new Font(20));
+			vbox.getChildren().add(tonesText);
+
+	        Separator separator1 = new Separator();
+	        vbox.getChildren().add(separator1);
 
 			ToggleGroup toggleGroup = new ToggleGroup();
 			harmonicSeriesRadioButton = new RadioButton("Harmonic series");
@@ -40,32 +54,98 @@ public class Tones extends Application {
 			vbox.getChildren().add(equalTemperamentRadioButton);
 			harmonicSeriesRadioButton.fire();
 
-			HBox durationHBox = new HBox();
-			durationField = new TextField();
-			durationHBox.getChildren().add(new Label("Track duration: "));
-			durationHBox.getChildren().add(durationField);
-			vbox.getChildren().add(durationHBox);
-
-			HBox innerDelayHBox = new HBox();
-			innerDelayField = new TextField();
-			innerDelayHBox.getChildren().add(new Label("Inner delay: "));
-			innerDelayHBox.getChildren().add(innerDelayField);
-			vbox.getChildren().add(innerDelayHBox);
-
-			HBox chordFadeIntervalHBox = new HBox();
-			chordFadeIntervalField = new TextField();
-			chordFadeIntervalHBox.getChildren().add(new Label("Chord fade interval: "));
-			chordFadeIntervalHBox.getChildren().add(chordFadeIntervalField);
-			vbox.getChildren().add(chordFadeIntervalHBox);
-
-			HBox trackFadeIntervalHBox = new HBox();
-			trackFadeIntervalField = new TextField();
-			trackFadeIntervalHBox.getChildren().add(new Label("Track fade interval: "));
-			trackFadeIntervalHBox.getChildren().add(trackFadeIntervalField);
-			vbox.getChildren().add(trackFadeIntervalHBox);
-
 			frequencyField = new TextField();
+			frequencyField.setPromptText("Frequencies");
 			vbox.getChildren().add(frequencyField);
+
+	        Separator separator2 = new Separator();
+	        vbox.getChildren().add(separator2);
+
+			GridPane slidersGrid = new GridPane();
+			vbox.getChildren().add(slidersGrid);
+			slidersGrid.setVgap(5);
+			slidersGrid.setAlignment(Pos.CENTER);
+
+			durationSlider = new Slider();
+			durationSlider.setMin(0.1);
+			durationSlider.setMax(30);
+			durationSlider.setValue(initialTrackDuration);
+			durationSlider.setMajorTickUnit(0.1);
+			durationSlider.setMinorTickCount(0);
+			durationSlider.setBlockIncrement(0.1);
+			durationSlider.setShowTickMarks(false);
+			durationSlider.setShowTickLabels(false);
+			final Label durationLabel = new Label(String.format("%.1f seconds", durationSlider.getValue()));
+			// final Label durationLabel = new Label(String.format("%4.1s seconds", durationSlider.getValue()));
+			durationSlider.valueProperty().addListener(new ChangeListener<Number>() {
+				public void changed(ObservableValue<? extends Number> ov, Number oldValue, Number newValue) {
+					durationLabel.setText(String.format("%.1f seconds", newValue));
+					double doubleValue = newValue.doubleValue();
+					innerDelaySlider.setMax(doubleValue);
+					trackFadeIntervalSlider.setMax(doubleValue);
+					chordFadeIntervalSlider.setMax(doubleValue);
+				}
+			});
+			slidersGrid.add(new Label("Track duration: "), 1, 1);
+			slidersGrid.add(durationSlider, 2, 1);
+			slidersGrid.add(durationLabel, 3, 1);
+
+			innerDelaySlider = new Slider();
+			innerDelaySlider.setMin(0);
+			innerDelaySlider.setMax(initialTrackDuration);
+			innerDelaySlider.setValue(0);
+			innerDelaySlider.setMajorTickUnit(0.1);
+			innerDelaySlider.setMinorTickCount(0);
+			innerDelaySlider.setBlockIncrement(0.1);
+			innerDelaySlider.setShowTickMarks(false);
+			innerDelaySlider.setShowTickLabels(false);
+			final Label innerDelayLabel = new Label(String.format("%.1f seconds", innerDelaySlider.getValue()));
+			innerDelaySlider.valueProperty().addListener(new ChangeListener<Number>() {
+				public void changed(ObservableValue<? extends Number> ov, Number oldValue, Number newValue) {
+					innerDelayLabel.setText(String.format("%.1f seconds", newValue));
+				}
+			});
+			slidersGrid.add(new Label("Inner delay: "), 1, 2);
+			slidersGrid.add(innerDelaySlider, 2, 2);
+			slidersGrid.add(innerDelayLabel, 3, 2);
+
+			trackFadeIntervalSlider = new Slider();
+			trackFadeIntervalSlider.setMin(0);
+			trackFadeIntervalSlider.setMax(initialTrackDuration);
+			trackFadeIntervalSlider.setValue(0);
+			trackFadeIntervalSlider.setMajorTickUnit(0.1);
+			trackFadeIntervalSlider.setMinorTickCount(0);
+			trackFadeIntervalSlider.setBlockIncrement(0.1);
+			trackFadeIntervalSlider.setShowTickMarks(false);
+			trackFadeIntervalSlider.setShowTickLabels(false);
+			final Label trackFadeIntervalLabel = new Label(String.format("%.1f seconds", trackFadeIntervalSlider.getValue()));
+			trackFadeIntervalSlider.valueProperty().addListener(new ChangeListener<Number>() {
+				public void changed(ObservableValue<? extends Number> ov, Number oldValue, Number newValue) {
+					trackFadeIntervalLabel.setText(String.format("%.1f seconds", newValue));
+				}
+			});
+			slidersGrid.add(new Label("Track fade interval: "), 1, 3);
+			slidersGrid.add(trackFadeIntervalSlider, 2, 3);
+			slidersGrid.add(trackFadeIntervalLabel, 3, 3);
+
+			chordFadeIntervalSlider = new Slider();
+			chordFadeIntervalSlider.setMin(0);
+			chordFadeIntervalSlider.setMax(initialTrackDuration);
+			chordFadeIntervalSlider.setValue(0);
+			chordFadeIntervalSlider.setMajorTickUnit(0.1);
+			chordFadeIntervalSlider.setMinorTickCount(0);
+			chordFadeIntervalSlider.setBlockIncrement(0.1);
+			chordFadeIntervalSlider.setShowTickMarks(false);
+			chordFadeIntervalSlider.setShowTickLabels(false);
+			final Label chordFadeIntervalLabel = new Label(String.format("%.1f seconds", chordFadeIntervalSlider.getValue()));
+			chordFadeIntervalSlider.valueProperty().addListener(new ChangeListener<Number>() {
+				public void changed(ObservableValue<? extends Number> ov, Number oldValue, Number newValue) {
+					chordFadeIntervalLabel.setText(String.format("%.1f seconds", newValue));
+				}
+			});
+			slidersGrid.add(new Label("Chord fade interval: "), 1, 4);
+			slidersGrid.add(chordFadeIntervalSlider, 2, 4);
+			slidersGrid.add(chordFadeIntervalLabel, 3, 4);
 
 	        HBox buttonsHBox = new HBox();
 			Button playButton = new Button("Play");
@@ -81,10 +161,27 @@ public class Tones extends Application {
 	            }
 	        });
 	        buttonsHBox.getChildren().addAll(playButton, stopButton);
+	        buttonsHBox.setAlignment(Pos.CENTER);
 	        vbox.getChildren().add(buttonsHBox);
 	        
-	        setScene(new Scene(vbox, 500, 500));
+	        setScene(new Scene(vbox));
 	        show();
+		}
+
+		private int getTrackDuration() {
+			return (int) (durationSlider.getValue() * 1000);
+		}
+
+		private int getInnerDelay() {
+			return (int) (innerDelaySlider.getValue() * 1000);
+		}
+
+		private int getTrackFadeDuration() {
+			return (int) (trackFadeIntervalSlider.getValue() * 1000);
+		}
+
+		private int getChordFadeDuration() {
+			return (int) (chordFadeIntervalSlider.getValue() * 1000);
 		}
 
 		private void playButtonAction() {
@@ -138,8 +235,7 @@ public class Tones extends Application {
 					}
 				}
 			}
-			Track track = new Track(Integer.parseInt(durationField.getText()), Integer.parseInt(innerDelayField.getText()),
-								    Integer.parseInt(chordFadeIntervalField.getText()), Integer.parseInt(trackFadeIntervalField.getText()));
+			Track track = new Track(getTrackDuration(), getInnerDelay(), getChordFadeDuration(), getTrackFadeDuration());
 			track.addAll(chordsList);
 			if(track.size() == 0) {
 				throw new InvalidTrackDataException("No track data was found");
