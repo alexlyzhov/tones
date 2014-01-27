@@ -75,6 +75,7 @@ public class Tones extends Application {
 			durationSlider.setBlockIncrement(0.1);
 			durationSlider.setShowTickMarks(false);
 			durationSlider.setShowTickLabels(false);
+			durationSlider.setSnapToTicks(true);
 			final Label durationLabel = new Label(String.format("%.1f seconds", durationSlider.getValue()));
 			// final Label durationLabel = new Label(String.format("%4.1s seconds", durationSlider.getValue()));
 			durationSlider.valueProperty().addListener(new ChangeListener<Number>() {
@@ -99,6 +100,7 @@ public class Tones extends Application {
 			innerDelaySlider.setBlockIncrement(0.1);
 			innerDelaySlider.setShowTickMarks(false);
 			innerDelaySlider.setShowTickLabels(false);
+			innerDelaySlider.setSnapToTicks(true);
 			final Label innerDelayLabel = new Label(String.format("%.1f seconds", innerDelaySlider.getValue()));
 			innerDelaySlider.valueProperty().addListener(new ChangeListener<Number>() {
 				public void changed(ObservableValue<? extends Number> ov, Number oldValue, Number newValue) {
@@ -118,6 +120,7 @@ public class Tones extends Application {
 			trackFadeIntervalSlider.setBlockIncrement(0.1);
 			trackFadeIntervalSlider.setShowTickMarks(false);
 			trackFadeIntervalSlider.setShowTickLabels(false);
+			trackFadeIntervalSlider.setSnapToTicks(true);
 			final Label trackFadeIntervalLabel = new Label(String.format("%.1f seconds", trackFadeIntervalSlider.getValue()));
 			trackFadeIntervalSlider.valueProperty().addListener(new ChangeListener<Number>() {
 				public void changed(ObservableValue<? extends Number> ov, Number oldValue, Number newValue) {
@@ -137,6 +140,7 @@ public class Tones extends Application {
 			chordFadeIntervalSlider.setBlockIncrement(0.1);
 			chordFadeIntervalSlider.setShowTickMarks(false);
 			chordFadeIntervalSlider.setShowTickLabels(false);
+			chordFadeIntervalSlider.setSnapToTicks(true);
 			final Label chordFadeIntervalLabel = new Label(String.format("%.1f seconds", chordFadeIntervalSlider.getValue()));
 			chordFadeIntervalSlider.valueProperty().addListener(new ChangeListener<Number>() {
 				public void changed(ObservableValue<? extends Number> ov, Number oldValue, Number newValue) {

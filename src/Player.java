@@ -8,7 +8,7 @@ public class Player {
 	public final static int FRAME_SIZE = SAMPLE_SIZE_IN_BITS / 8 * CHANNELS;
 	public final static int FRAME_RATE = SAMPLE_RATE;
 	public final static boolean BIG_ENDIAN = false;
-	public final static int BUFFER_CHUNK_SIZE = FRAME_RATE / 100;
+	public final static int BUFFER_CHUNK_SIZE = FRAME_RATE / 100; //move these buffer things to freq or chord player class
 	public final static int BUFFER_SIZE = BUFFER_CHUNK_SIZE * 10;
 	private SourceDataLine sourceDataLine = null;
 	private TrackPlayer trackPlayer = null;

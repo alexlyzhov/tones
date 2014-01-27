@@ -29,7 +29,7 @@ public class TrackPlayer implements Runnable {
 	}
 
 	public double getTrackDuration() {
-		return (track.getDuration() / 1000);
+		return (track.getDuration() / 1000d);
 	}
 
 	public double getTrackPosition() {

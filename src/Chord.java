@@ -30,10 +30,8 @@ public class Chord {
 	}
 
 	public int getActivePlayDuration() {
-		int idealDuration = duration - preDelay - postDelay;
-		// int chordPeriod
-		// int actualDuration = idealDuration - (idealDuration % chordPeriod);
-		return idealDuration;
+		System.out.println(duration + " " + preDelay + " " + postDelay + " active " + (duration - preDelay - postDelay));
+		return duration - preDelay - postDelay;
 	}
 
 	public int getPreDelay() {

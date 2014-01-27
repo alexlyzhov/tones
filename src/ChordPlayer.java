@@ -46,9 +46,6 @@ public class ChordPlayer {
 				prevFrameData = data;
 				result += (data / chord.size());
 			}
-			// if(envelopeStage == EnvelopeStage.FADE_OUT) {
-			// 	System.out.print(result + " ");
-			// }
 			return result;
 		}
 
@@ -100,6 +97,10 @@ public class ChordPlayer {
 			fadeOutFlag = true;
 		}
 
+		public void stop() {
+			envelopeStage = EnvelopeStage.NULL;
+		}
+
 		public int getMaxFrames() {
 			return maxFrames;
 		}
@@ -136,10 +137,6 @@ public class ChordPlayer {
 			}
 			if(sourceDataLine.available() >= Player.BUFFER_CHUNK_SIZE) {
 				int framesToGet = Player.BUFFER_CHUNK_SIZE;
-				// short[] shortData = new short[framesToGet];
-				// for(int i = 0; i < shortData.length; i++) {
-				// 	shortData[i] = cycle.getFrameData(frames + i);
-				// }
 				ArrayList<Short> shortDataList = new ArrayList<Short>();
 				for(int i = 0; i < framesToGet; i++) {
 					if(cycle.isAlive()) {
@@ -150,17 +147,9 @@ public class ChordPlayer {
 				for(int i = 0; i < shortDataList.size(); i++) {
 					shortData[i] = shortDataList.get(i);
 				}
-				// if(frames >= cycle.getMaxFrames() - Player.BUFFER_CHUNK_SIZE * 10) {
-				// if((frames >= cycle.getMaxFrames() - Player.BUFFER_CHUNK_SIZE * 3) || (frames <= Player.BUFFER_CHUNK_SIZE * 3)) {
-				// 	System.out.println("frames " + frames);
-				// 	for(short j: shortData) {
-				// 		System.out.print(j + " ");
-				// 	}
-				// 	System.out.println("shortDataList size() == " + shortDataList.size());
-				// 	System.out.println("");
-				// }
 				byte[] byteData = getByteData(shortData);
 				frames += shortData.length;
+				if(byteData.length != 2)
 				sourceDataLine.write(byteData, 0, byteData.length);
 			}
 		}
@@ -185,7 +174,7 @@ public class ChordPlayer {
 	}
 
 	public void stop() {
-		playingIsActive = false;
+		cycle.stop();
 	}
 
 	public Chord getChord() {
