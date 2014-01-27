@@ -2,6 +2,7 @@ import javax.sound.sampled.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.ArrayList;
 
 public class ChordPlayer {
 	private class Cycle {
@@ -13,6 +14,7 @@ public class ChordPlayer {
 		private short[] buffer;
 		private int fadeOutInitFrame; double fadeOutInitPhase;
 		private boolean fadeOutFlag;
+		private short prevFrameData;
 
 		public Cycle(Chord chord) {
 			this.chord = chord;
@@ -29,12 +31,24 @@ public class ChordPlayer {
 
 		public short getFrameData(int frame) {
 			updateVolume(frame);
+			if(envelopeStage == EnvelopeStage.NULL) {
+				return 0;
+			}
 			short result = 0;
 			for(int i = 0; i < chord.size(); i++) {
 				Frequency frequency = chord.getFrequency(i);
 				short data = frequency.getData(frame, volume);
+				if((envelopeStage == EnvelopeStage.FADE_OUT) && (fadeOutFrames == 0) && (((int) prevFrameData * data)) <= 0) {
+					data = 0;
+					// System.out.println("null in getFrameData()");
+					envelopeStage = EnvelopeStage.NULL;
+				}
+				prevFrameData = data;
 				result += (data / chord.size());
 			}
+			// if(envelopeStage == EnvelopeStage.FADE_OUT) {
+			// 	System.out.print(result + " ");
+			// }
 			return result;
 		}
 
@@ -65,12 +79,13 @@ public class ChordPlayer {
 					envelopeStage = EnvelopeStage.PLATEAU;
 				}
 			} else if(envelopeStage == EnvelopeStage.FADE_OUT) {
-				double phase = (fadeOutFrames != 0) ? (fadeOutInitPhase + ((double) (frame - fadeOutInitFrame)) / fadeOutFrames) : 1;
+				double phase = (fadeOutFrames != 0) ? (fadeOutInitPhase + ((double) (frame - fadeOutInitFrame)) / fadeOutFrames) : 0;
 				double linearVolume = 1 - phase;
 				if(linearVolume > 0D) {
 					this.volume = getLogarithmicVolume(linearVolume);
 				} else {
 					this.volume = 0;
+					System.out.println("null in envfo");
 					envelopeStage = EnvelopeStage.NULL;
 				}
 			}
@@ -98,8 +113,8 @@ public class ChordPlayer {
 	private SourceDataLine sourceDataLine;
 	private Chord chord;
 	private Cycle cycle;
-	private boolean playing;
 	private int frames;
+	private boolean playingIsActive = false;
 
 	public ChordPlayer(SourceDataLine sourceDataLine, Chord chord) {
 		this.sourceDataLine = sourceDataLine;
@@ -114,23 +129,42 @@ public class ChordPlayer {
 
 		long activePlayStartTime = System.currentTimeMillis();
 		frames = 0;
-		playing = true;
-		while(cycle.isAlive() && playing) {
+		playingIsActive = true;
+		while(cycle.isAlive()) {
 			if(frames > cycle.getMaxFrames()) {
 				System.out.println("max frames exceeded");
 			}
 			if(sourceDataLine.available() >= Player.BUFFER_CHUNK_SIZE) {
-				int framesToGet = Math.min(Player.BUFFER_CHUNK_SIZE, cycle.getMaxFrames() - frames);
-				short[] shortData = new short[framesToGet];
-				for(int i = 0; i < shortData.length; i++) {
-					shortData[i] = cycle.getFrameData(frames + i);
+				int framesToGet = Player.BUFFER_CHUNK_SIZE;
+				// short[] shortData = new short[framesToGet];
+				// for(int i = 0; i < shortData.length; i++) {
+				// 	shortData[i] = cycle.getFrameData(frames + i);
+				// }
+				ArrayList<Short> shortDataList = new ArrayList<Short>();
+				for(int i = 0; i < framesToGet; i++) {
+					if(cycle.isAlive()) {
+						shortDataList.add(cycle.getFrameData(frames + i));
+					}
 				}
+				short[] shortData = new short[shortDataList.size()];
+				for(int i = 0; i < shortDataList.size(); i++) {
+					shortData[i] = shortDataList.get(i);
+				}
+				if(frames >= cycle.getMaxFrames() - Player.BUFFER_CHUNK_SIZE * 10) {
+				// if((frames >= cycle.getMaxFrames() - Player.BUFFER_CHUNK_SIZE * 3) || (frames <= Player.BUFFER_CHUNK_SIZE * 3)) {
+				// 	System.out.println("frames " + frames);
+				// 	for(short j: shortData) {
+				// 		System.out.print(j + " ");
+				// 	}
+				// 	System.out.println("shortDataList size() == " + shortDataList.size());
+				// 	System.out.println("");
+				// }
 				byte[] byteData = getByteData(shortData);
 				frames += shortData.length;
 				sourceDataLine.write(byteData, 0, byteData.length);
 			}
 		}
-		// sourceDataLine.flush();
+		playingIsActive = false;
 
 		try {
 			Thread.sleep(chord.getPostDelay());
@@ -151,6 +185,10 @@ public class ChordPlayer {
 	}
 
 	public void stop() {
-		playing = false;
+		playingIsActive = false;
+	}
+
+	public Chord getChord() {
+		return playingIsActive ? chord : new Chord();
 	}
 }

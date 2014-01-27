@@ -45,6 +45,27 @@ public class Player {
 		trackPlayer.stop();
 	}
 
+	public double getTrackDuration() throws IllegalActionPlayerException {
+		if(!isPlaying()) {
+			throw new IllegalActionPlayerException("Nothing is playing");
+		}
+		return trackPlayer.getTrackDuration();
+	}
+
+	public double getTrackPosition() throws IllegalActionPlayerException {
+		if(!isPlaying()) {
+			throw new IllegalActionPlayerException("Nothing is playing");
+		}
+		return trackPlayer.getTrackPosition();
+	}
+
+	public Chord getCurrentChord() throws IllegalActionPlayerException {
+		if(!isPlaying()) {
+			throw new IllegalActionPlayerException("Nothing is playing");
+		}
+		return trackPlayer.getCurrentChord();
+	}
+
 	private boolean isPlaying() {
 		return (sourceDataLine.isActive());
 	}

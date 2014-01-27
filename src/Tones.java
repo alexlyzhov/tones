@@ -1,4 +1,4 @@
-import javafx.application.Application;
+import javafx.application.*;
 import javafx.stage.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
@@ -163,6 +163,36 @@ public class Tones extends Application {
 	        buttonsHBox.getChildren().addAll(playButton, stopButton);
 	        buttonsHBox.setAlignment(Pos.CENTER);
 	        vbox.getChildren().add(buttonsHBox);
+
+	        final Label trackInfo = new Label("");
+	        final Label chordInfo = new Label("");
+	        (new Thread() {
+	        	public void run() {
+	        		while(true) { //run this cycle only if the player is active and stop with the track stoppage
+	        			Platform.runLater(new Runnable() {
+	        				public void run() {
+			        			String trackInfoString = "";
+			        			try {
+			        				String trackPositionString = String.format("%.1f", player.getTrackPosition());
+			        				String trackDurationString = String.format("%.1f", player.getTrackDuration());
+			        				trackInfoString = trackPositionString + " / " + trackDurationString;
+			        			} catch(IllegalActionPlayerException ex) {}
+	        					trackInfo.setText(trackInfoString);
+	        					String chordInfoString = "";
+	        					try {
+	        						chordInfoString = "Current chord: " + player.getCurrentChord().toString();
+	        					} catch(IllegalActionPlayerException ex) {}
+	        					chordInfo.setText(chordInfoString);
+	        				}
+	        			});
+	        			try {
+	        				Thread.sleep(50);
+	        			} catch(InterruptedException ex) {ex.printStackTrace();}
+	        		}
+	        	}
+	        }).start();
+	        vbox.getChildren().add(trackInfo);
+	        vbox.getChildren().add(chordInfo);
 	        
 	        setScene(new Scene(vbox));
 	        show();

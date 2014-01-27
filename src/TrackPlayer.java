@@ -5,6 +5,7 @@ public class TrackPlayer implements Runnable {
 	private Track track = null;
 	private ChordPlayer chordPlayer = null;
 	private boolean finishPlaying = false;
+	private long startTime;
 
 	public TrackPlayer(SourceDataLine sourceDataLine, Track track) {
 		this.sourceDataLine = sourceDataLine;
@@ -12,6 +13,7 @@ public class TrackPlayer implements Runnable {
 	}
 
 	public void run() {
+		startTime = System.currentTimeMillis();
 		sourceDataLine.start();
 		for(int i = 0; (i < track.size()) && (!finishPlaying); i++) {
 			Chord chord = track.getChord(i);
@@ -24,5 +26,17 @@ public class TrackPlayer implements Runnable {
 	public void stop() {
 		finishPlaying = true;
 		chordPlayer.stop();
+	}
+
+	public double getTrackDuration() {
+		return (track.getDuration() / 1000);
+	}
+
+	public double getTrackPosition() {
+		return (double) ((System.currentTimeMillis() - startTime) / 1000d);
+	}
+
+	public Chord getCurrentChord() {
+		return chordPlayer.getChord();
 	}
 }

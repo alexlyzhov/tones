@@ -30,7 +30,10 @@ public class Chord {
 	}
 
 	public int getActivePlayDuration() {
-		return duration - preDelay - postDelay;
+		int idealDuration = duration - preDelay - postDelay;
+		// int chordPeriod
+		// int actualDuration = idealDuration - (idealDuration % chordPeriod);
+		return idealDuration;
 	}
 
 	public int getPreDelay() {
@@ -54,6 +57,8 @@ public class Chord {
 
 
 	public String toString() {
+		if(frequencies.isEmpty()) return "silence";
+
 		String result = "[";
 
 		Iterator<Frequency> iterator = frequencies.iterator();

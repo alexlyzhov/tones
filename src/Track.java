@@ -35,6 +35,10 @@ public class Track {
 		return chords.size();
 	}
 
+	public int getDuration() {
+		return duration;
+	}
+
 	public String toString() {
 		String result = "Duration " + duration + "\nChords: ";
 		for(int i = 0; i < chords.size() - 1; i++) {
