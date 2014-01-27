@@ -150,7 +150,7 @@ public class ChordPlayer {
 				for(int i = 0; i < shortDataList.size(); i++) {
 					shortData[i] = shortDataList.get(i);
 				}
-				if(frames >= cycle.getMaxFrames() - Player.BUFFER_CHUNK_SIZE * 10) {
+				// if(frames >= cycle.getMaxFrames() - Player.BUFFER_CHUNK_SIZE * 10) {
 				// if((frames >= cycle.getMaxFrames() - Player.BUFFER_CHUNK_SIZE * 3) || (frames <= Player.BUFFER_CHUNK_SIZE * 3)) {
 				// 	System.out.println("frames " + frames);
 				// 	for(short j: shortData) {
