@@ -66,7 +66,7 @@ public class Player {
 		return trackPlayer.getCurrentChord();
 	}
 
-	private boolean isPlaying() {
+	public boolean isPlaying() {
 		return (sourceDataLine.isActive());
 	}
 }

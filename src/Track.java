@@ -1,23 +1,15 @@
-import java.util.ArrayList;
+import java.util.List;
 
 public class Track {
 	private int duration, innerDelay, chordFadeInterval, trackFadeInterval;
-	private ArrayList<Chord> chords;
+	private List<Chord> chords;
 
-	public Track(int duration, int innerDelay, int chordFadeInterval, int trackFadeInterval) {
+	public Track(int duration, int innerDelay, int chordFadeInterval, int trackFadeInterval, List<Chord> chordsList) {
 		this.duration = duration;
 		this.innerDelay = innerDelay;
 		this.chordFadeInterval = chordFadeInterval;
 		this.trackFadeInterval = trackFadeInterval;
-		chords = new ArrayList<Chord>();
-	}
-
-	public void add(Chord chord) {
-		chords.add(chord);
-	}
-
-	public void addAll(ArrayList<Chord> chordsList) {
-		chords.addAll(chordsList);
+		this.chords = chordsList;
 	}
 
 	public Chord getChord(int index) {
