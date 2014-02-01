@@ -1,15 +1,20 @@
-import java.util.Iterator;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.ArrayList; //get rid of this pervertion
+import java.util.Iterator; //and of this
 
 public class Chord {
-	private ArrayList<Frequency> frequencies;
+	private List<Frequency> frequencies;
 	private int duration, preDelay, postDelay, fadeInDuration, fadeOutDuration;
 
-	public Chord() {
+	public Chord() { //get rid of this pervertion
 		frequencies = new ArrayList<Frequency>();
 	}
 
-	public void add(Frequency frequency) {
+	public Chord(List<Frequency> frequencies) {
+		this.frequencies = frequencies;
+	}
+
+	public void add(Frequency frequency) { //remove
 		frequencies.add(frequency);
 	}
 

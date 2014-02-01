@@ -53,7 +53,7 @@ public class Frequency {
 	}
 
 	public String toString() {
-		return String.format("%.1f", value);
+		return String.format("%.2f", value);
 	}
 
 	public double getValue() {
