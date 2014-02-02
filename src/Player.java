@@ -12,16 +12,11 @@ public class Player {
 	public final static int BUFFER_SIZE = BUFFER_CHUNK_SIZE * 10;
 	private SourceDataLine sourceDataLine = null;
 	private TrackPlayer trackPlayer = null;
-	private Messages messages = Messages.getInstance();
-
-	public static AudioFormat getAudioFormat() {
-		AudioFormat af = new AudioFormat(ENCODING, SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, FRAME_SIZE, FRAME_RATE, BIG_ENDIAN);
-		return af;
-	}
+	private Messages messages = Messages.getInstance(); //there should not be message-interaction with user
 
 	public Player() throws InitFailedPlayerException {
 		try {
-			AudioFormat af = getAudioFormat();
+			AudioFormat af = new AudioFormat(ENCODING, SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, FRAME_SIZE, FRAME_RATE, BIG_ENDIAN);
 			DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
 		    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
 		    sourceDataLine.open(af, BUFFER_SIZE);
@@ -32,7 +27,7 @@ public class Player {
 
 	public void play(final Track track) throws IllegalActionPlayerException {
 		if(isPlaying()) {
-			throw new IllegalActionPlayerException(messages.getMessage("playbackAlreadyStarted"));
+			throw new IllegalActionPlayerException();
 		}
 		trackPlayer = new TrackPlayer(sourceDataLine, track);
 		Thread trackPlayerThread = new Thread(trackPlayer);
@@ -41,28 +36,28 @@ public class Player {
 
 	public void stop() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
-			throw new IllegalActionPlayerException(messages.getMessage("playbackAlreadyStopped"));
+			throw new IllegalActionPlayerException();
 		}
 		trackPlayer.stop();
 	}
 
 	public double getTrackDuration() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
-			throw new IllegalActionPlayerException(messages.getMessage("playerIsNotActive"));
+			throw new IllegalActionPlayerException();
 		}
 		return trackPlayer.getTrackDuration();
 	}
 
 	public double getTrackPosition() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
-			throw new IllegalActionPlayerException(messages.getMessage("playerIsNotActive"));
+			throw new IllegalActionPlayerException();
 		}
 		return trackPlayer.getTrackPosition();
 	}
 
 	public Chord getCurrentChord() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
-			throw new IllegalActionPlayerException(messages.getMessage("playerIsNotActive"));
+			throw new IllegalActionPlayerException();
 		}
 		return trackPlayer.getCurrentChord();
 	}
