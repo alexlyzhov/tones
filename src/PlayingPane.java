@@ -11,6 +11,7 @@ public class PlayingPane extends VBox {
 	final Player player;
 	final Label trackInfo, chordInfo;
 	private final int infoUpdateDelay = 50;
+	private Messages messages = Messages.getInstance();
 
 	public PlayingPane(ComposingPane composingPane, Player player) {
 		setSpacing(5);
@@ -18,7 +19,7 @@ public class PlayingPane extends VBox {
 		this.player = player;
 
         HBox buttonsHBox = new HBox();
-		Button playButton = new Button("Play");
+		Button playButton = new Button(messages.getMessage("play"));
 		//style buttons and pane; create new pause button
 		// playButton.setStyle("-fx-font: 22 arial; -fx-base: #b6e7c9;");
 		playButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -26,7 +27,7 @@ public class PlayingPane extends VBox {
             	playButtonAction();
             }
         });
-		Button stopButton = new Button("Stop");
+		Button stopButton = new Button(messages.getMessage("stop"));
 		stopButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
             	stopButtonAction();
@@ -81,7 +82,7 @@ public class PlayingPane extends VBox {
 			trackInfo.setText(trackInfoString);
 			String chordInfoString = "";
 			try {
-				chordInfoString = "Current chord: " + player.getCurrentChord().toString();
+				chordInfoString = messages.getMessage("currentChord") + ": " + player.getCurrentChord().toString();
 			} catch(IllegalActionPlayerException ex) {}
 			chordInfo.setText(chordInfoString);
 		}

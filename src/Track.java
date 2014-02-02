@@ -3,6 +3,7 @@ import java.util.List;
 public class Track {
 	private int duration, innerDelay, chordFadeInterval, trackFadeInterval;
 	private List<Chord> chords;
+	private Messages messages = Messages.getInstance();
 
 	public Track(int duration, int innerDelay, int chordFadeInterval, int trackFadeInterval, List<Chord> chordsList) {
 		this.duration = duration;
@@ -32,7 +33,7 @@ public class Track {
 	}
 
 	public String toString() {
-		String result = "Duration " + duration + "\nChords: ";
+		String result = messages.getMessage("duration") + " " + duration + "\n" + messages.getMessage("chords");
 		for(int i = 0; i < chords.size() - 1; i++) {
 			result += chords.get(i).toString() + " ";
 		}

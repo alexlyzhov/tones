@@ -5,6 +5,7 @@ import java.util.Iterator; //and of this
 public class Chord {
 	private List<Frequency> frequencies;
 	private int duration, preDelay, postDelay, fadeInDuration, fadeOutDuration;
+	private Messages messages = Messages.getInstance();
 
 	public Chord() { //get rid of this pervertion
 		frequencies = new ArrayList<Frequency>();
@@ -60,7 +61,7 @@ public class Chord {
 
 
 	public String toString() {
-		if(frequencies.isEmpty()) return "silence";
+		if(frequencies.isEmpty()) return messages.getMessage("silence");
 
 		String result = "[";
 
