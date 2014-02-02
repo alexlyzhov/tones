@@ -1,10 +1,11 @@
 public class Frequency {
 	private double freq;
 	private FunctionData functionData;
+	private Messages messages = Messages.getInstance();
 
 	public Frequency(double freq) throws InvalidDataException {
 		if((freq < 0) || (freq > 20000)) {
-			throw new InvalidDataException();
+			throw new InvalidDataException(messages.getMessage("freqBeyondRange"));
 		}
 		this.freq = freq;
 		functionData = new FunctionData();

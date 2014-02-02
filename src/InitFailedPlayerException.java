@@ -1,5 +1,5 @@
-public class InitFailedPlayerException extends Exception {
-	public InitFailedPlayerException(String s) {
-		super(s);
+public class InitFailedPlayerException extends DialogException {
+	public InitFailedPlayerException(String message) {
+		super(message);
 	}
 }

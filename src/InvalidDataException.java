@@ -1,5 +1,5 @@
-public class InvalidDataException extends Exception {
-	public InvalidDataException() {
-		super();
+public class InvalidDataException extends DialogException {
+	public InvalidDataException(String message) {
+		super(message);
 	}
 }

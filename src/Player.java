@@ -1,6 +1,6 @@
 import javax.sound.sampled.*;
 
-public class Player {
+public class Player extends Track {
 	public final static AudioFormat.Encoding ENCODING = AudioFormat.Encoding.PCM_SIGNED;
 	public final static boolean BIG_ENDIAN = false;
 	public final static int SAMPLE_RATE = 44100;
@@ -11,64 +11,60 @@ public class Player {
 	public final static int BUFFER_CHUNK_SIZE = FRAME_RATE / 100;
 	public final static int BUFFER_SIZE = BUFFER_CHUNK_SIZE * 10;
 
+	private static SourceDataLine sourceDataLine;
 	private Messages messages = Messages.getInstance();
-	private SourceDataLine sourceDataLine;
-	private Track track;
+
+	private boolean playing;
 	private ChordPlayer chordPlayer;
-	private boolean finishPlaying;
 	private long startTime;
 
-	public Player() throws InitFailedPlayerException {
-		try {
-			AudioFormat af = new AudioFormat(ENCODING, SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, FRAME_SIZE, FRAME_RATE, BIG_ENDIAN);
-			DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
-		    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
-		    sourceDataLine.open(af, BUFFER_SIZE);
-		} catch(LineUnavailableException ex) {
-			throw new InitFailedPlayerException(messages.getMessage("dataLineNotAvailable"));
+	public Player(Track track) throws InitFailedPlayerException {
+		super(track);
+		if(sourceDataLine == null) {
+			try {
+				AudioFormat af = new AudioFormat(ENCODING, SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, FRAME_SIZE, FRAME_RATE, BIG_ENDIAN);
+				DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af);
+			    sourceDataLine = (SourceDataLine) AudioSystem.getLine(lineInfo);
+			    sourceDataLine.open(af, BUFFER_SIZE);
+			} catch(LineUnavailableException ex) {
+				throw new InitFailedPlayerException(messages.getMessage("dataLineNotAvailable"));
+			}
 		}
 	}
 
-	public void play(final Track track) throws IllegalActionPlayerException {
+	public static SourceDataLine getSourceDataLine() {
+		return sourceDataLine;
+	}
+
+	public void play() throws IllegalActionPlayerException {
 		if(isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
-		this.track = track;
-		PlayerRunnable playerRunnable = new PlayerRunnable();
-		Thread playerThread = new Thread(playerRunnable);
-		playerThread.start();
-	}
-
-	private class PlayerRunnable implements Runnable {
-		public void run() {
-			startTime = System.currentTimeMillis();
-			sourceDataLine.start();
-			finishPlaying = false;
-			for(int i = 0; (i < track.size()) && (!finishPlaying); i++) {
-				Chord chord = track.getChord(i);
-				chordPlayer = new ChordPlayer(sourceDataLine, chord);
-				chordPlayer.play();
+	    sourceDataLine.start();
+		startTime = System.currentTimeMillis();
+		playing = true;
+		(new Thread() {
+			public void run() {
+				for(int i = 0; (i < chords.size()) && playing; i++) {
+					Chord chord = chords.get(i);
+					chordPlayer = new ChordPlayer(chord);
+					chordPlayer.play(); //chord.play();
+				}
+				playing = false;
+				sourceDataLine.stop();
 			}
-			sourceDataLine.stop();
-		}
+		}).start();
 	}
 
 	public void stop() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
-		finishPlaying = true;
+		playing = false;
 		chordPlayer.stop();
 	}
 
-	public double getTrackDuration() throws IllegalActionPlayerException {
-		if(!isPlaying()) {
-			throw new IllegalActionPlayerException();
-		}
-		return (track.getDuration() / 1000d);
-	}
-
-	public double getTrackPosition() throws IllegalActionPlayerException {
+	public double getCurrentPosition() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
@@ -83,6 +79,6 @@ public class Player {
 	}
 
 	public boolean isPlaying() {
-		return (sourceDataLine.isActive());
+		return (playing || (sourceDataLine.isActive()));
 	}
 }

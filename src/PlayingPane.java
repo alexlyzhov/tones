@@ -8,15 +8,14 @@ import javafx.application.Platform;
 
 public class PlayingPane extends VBox {
 	final ComposingPane composingPane;
-	final Player player;
 	final Label trackInfo, chordInfo;
-	private final int infoUpdateDelay = 50;
 	private Messages messages = Messages.getInstance();
+	private Player player;
+	private final int infoUpdateDelay = 50;
 
-	public PlayingPane(ComposingPane composingPane, Player player) {
+	public PlayingPane(ComposingPane composingPane) {
 		setSpacing(5);
 		this.composingPane = composingPane;
-		this.player = player;
 
         HBox buttonsHBox = new HBox();
 		Button playButton = new Button(messages.getMessage("play"));
@@ -45,9 +44,10 @@ public class PlayingPane extends VBox {
 	private void playButtonAction() {
 		try {
 			Track newTrack = composingPane.createTrack();
-			player.play(newTrack);
+			player = new Player(newTrack);
+			player.play();
 			startInfoUpdateCycle();
-		} catch(InvalidTrackDataException ex) {
+		} catch(DialogException ex) {
 			ex.showDialog();
 		} catch(IllegalActionPlayerException ex) {}
 	}
@@ -67,6 +67,7 @@ public class PlayingPane extends VBox {
 						Thread.sleep(50);
 					} catch(InterruptedException ex) {ex.printStackTrace();}
 				}
+				Platform.runLater(new InfoClearRunnable());
 			}
 		}).start();
 	}
@@ -75,16 +76,29 @@ public class PlayingPane extends VBox {
 		public void run() {
 			String trackInfoString = "";
 			try {
-				String trackPositionString = String.format("%.1f", player.getTrackPosition());
-				String trackDurationString = String.format("%.1f", player.getTrackDuration());
+				String trackPositionString = String.format("%.1f", player.getCurrentPosition());
+				String trackDurationString = String.format("%.1f", player.getSecondsDuration());
 				trackInfoString = trackPositionString + " / " + trackDurationString;
 			} catch(IllegalActionPlayerException ex) {}
 			trackInfo.setText(trackInfoString);
 			String chordInfoString = "";
 			try {
-				chordInfoString = messages.getMessage("currentChord") + ": " + player.getCurrentChord().toString();
+				chordInfoString = messages.getMessage("currentChord") + ": ";
+				Chord currentChord = player.getCurrentChord();
+				if(currentChord != null) {
+					chordInfoString += currentChord.toString();
+				} else {
+					chordInfoString += messages.getMessage("silence");
+				}
 			} catch(IllegalActionPlayerException ex) {}
 			chordInfo.setText(chordInfoString);
+		}
+	}
+
+	private class InfoClearRunnable implements Runnable {
+		public void run() {
+			trackInfo.setText("");
+			chordInfo.setText("");
 		}
 	}
 }

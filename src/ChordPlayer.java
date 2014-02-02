@@ -17,7 +17,7 @@ public class ChordPlayer {
 
 		public Cycle(Chord chord) {
 			this.chord = chord;
-			maxFrames = getFrames(chord.getActivePlayDuration());
+			maxFrames = getFrames(chord.getDuration() - chord.getPreDelay() - chord.getPostDelay());
 			fadeInFrames = getFrames(chord.getFadeInDuration());
 			fadeOutFrames = getFrames(chord.getFadeOutDuration());
 			envelopeStage = EnvelopeStage.FADE_IN;
@@ -116,8 +116,8 @@ public class ChordPlayer {
 	private int frames;
 	private boolean playingIsActive = false;
 
-	public ChordPlayer(SourceDataLine sourceDataLine, Chord chord) {
-		this.sourceDataLine = sourceDataLine;
+	public ChordPlayer(Chord chord) {
+		this.sourceDataLine = Player.getSourceDataLine();
 		this.chord = chord;
 		cycle = new Cycle(chord);
 	}
@@ -177,6 +177,6 @@ public class ChordPlayer {
 	}
 
 	public Chord getChord() {
-		return playingIsActive ? chord : new Chord();
+		return playingIsActive ? chord : null;
 	}
 }

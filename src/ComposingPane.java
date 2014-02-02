@@ -8,7 +8,7 @@ import javafx.beans.value.*;
 
 public class ComposingPane extends VBox {
 	private MillisecondsSlider durationSlider, innerDelaySlider, chordFadeDurationSlider, trackFadeDurationSlider;
-	private ListView<Chord> chordsListView;
+	private ListView<BlankChord> chordsListView;
 	private Messages messages = Messages.getInstance();
 
 	public ComposingPane() {
@@ -64,16 +64,16 @@ public class ComposingPane extends VBox {
 		
 	}
 
-	public Track createTrack() throws InvalidTrackDataException {
-		List<Chord> chordsList = chordsListView.getItems();
+	public Track createTrack() throws InvalidDataException {
+		List<BlankChord> chordsList = chordsListView.getItems();
 		if(chordsList.isEmpty()) {
-			throw new InvalidTrackDataException(messages.getMessage("emptyChordList"));
+			throw new InvalidDataException(messages.getMessage("emptyChordList"));
 		}
 		int duration = durationSlider.getMillisecondsValue();
 		int innerDelay = innerDelaySlider.getMillisecondsValue();
 		int chordFade = chordFadeDurationSlider.getMillisecondsValue();
 		int trackFade = trackFadeDurationSlider.getMillisecondsValue();
-		Track track = new Track(duration, innerDelay, chordFade, trackFade, chordsList);
+		Track track = new Track(chordsList, duration, innerDelay, chordFade, trackFade);
 		return track;
 	}
 
@@ -97,7 +97,7 @@ public class ComposingPane extends VBox {
 	            		double doubleValue = Double.parseDouble(frequencyField.getText());
 	            		Frequency frequency = new Frequency(doubleValue);
 	            		if(frequenciesListView.getItems().contains(frequency)) {
-	            			throw new InvalidDataException();
+	            			throw new InvalidDataException(messages.getMessage("freqAlreadyAdded"));
 	            		}
 	            		frequenciesListView.getItems().add(frequency);
 	            		frequencyField.clear();
@@ -136,8 +136,8 @@ public class ComposingPane extends VBox {
 			createChordButton.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent event) {
 	            	if(!frequenciesListView.getItems().isEmpty()) {
-	            		Chord chord = new Chord(new ArrayList<Frequency>(frequenciesListView.getItems()));
-	            		chordsListView.getItems().add(chord);
+	            		BlankChord blankChord = new BlankChord(new ArrayList<Frequency>(frequenciesListView.getItems()));
+	            		chordsListView.getItems().add(blankChord);
 	            		frequenciesListView.getItems().clear();
 	            	}
 	            }
@@ -146,7 +146,7 @@ public class ComposingPane extends VBox {
 			Button chordsListRemoveButton = new Button(messages.getMessage("removeChord"));
 			chordsListRemoveButton.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent event) {
-	            	Chord chordToRemove = chordsListView.getFocusModel().getFocusedItem();
+	            	BlankChord chordToRemove = chordsListView.getFocusModel().getFocusedItem();
 	            	if(chordToRemove != null) {
 	            		chordsListView.getItems().remove(chordToRemove);
 	            	}
@@ -157,7 +157,7 @@ public class ComposingPane extends VBox {
 			chordsVBox.setSpacing(3);
 			chordsVBox.getChildren().addAll(createChordButton, chordsListRemoveButton);
 
-			chordsListView = new ListView<Chord>();
+			chordsListView = new ListView<BlankChord>();
 			chordsListView.setPrefHeight(120);
 			chordsListView.setPrefWidth(180);
 

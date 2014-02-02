@@ -1,33 +1,8 @@
-import java.util.List;
-import java.util.ArrayList; //get rid of this pervertion
-import java.util.Iterator; //and of this
-
-public class Chord {
-	private List<Frequency> frequencies;
+public class Chord extends BlankChord {
 	private int duration, preDelay, postDelay, fadeInDuration, fadeOutDuration;
-	private Messages messages = Messages.getInstance();
 
-	public Chord() { //get rid of this pervertion
-		frequencies = new ArrayList<Frequency>();
-	}
-
-	public Chord(List<Frequency> frequencies) {
-		this.frequencies = frequencies;
-	}
-
-	public void add(Frequency frequency) { //remove
-		frequencies.add(frequency);
-	}
-
-	public Frequency getFrequency(int index) {
-		return frequencies.get(index);
-	}
-
-	public int size() {
-		return frequencies.size();
-	}
-
-	public void setInfo(int duration, int preDelay, int postDelay, int fadeInDuration, int fadeOutDuration) {
+	public Chord(BlankChord blankChord, int duration, int preDelay, int postDelay, int fadeInDuration, int fadeOutDuration) {
+		super(blankChord);
 		this.duration = duration;
 		this.preDelay = preDelay;
 		this.postDelay = postDelay;
@@ -35,9 +10,8 @@ public class Chord {
 		this.fadeOutDuration = fadeOutDuration;
 	}
 
-	public int getActivePlayDuration() {
-		System.out.println(duration + " " + preDelay + " " + postDelay + " active " + (duration - preDelay - postDelay));
-		return duration - preDelay - postDelay;
+	public int getDuration() {
+		return duration;
 	}
 
 	public int getPreDelay() {
@@ -57,24 +31,5 @@ public class Chord {
 
 	public int getFadeOutDuration() {
 		return fadeOutDuration;
-	}
-
-
-	public String toString() {
-		if(frequencies.isEmpty()) return messages.getMessage("silence");
-
-		String result = "[";
-
-		Iterator<Frequency> iterator = frequencies.iterator();
-		while(iterator.hasNext()) {
-			Frequency frequency = iterator.next();
-			result += frequency.toString();
-			if(iterator.hasNext()) {
-				result += " ";
-			}
-		}
-
-		result += "]";
-		return result;
 	}
 }
