@@ -6,7 +6,6 @@ import java.util.ArrayList;
 
 public class ChordPlayer {
 	private class Cycle {
-		private final int BUFFER_SIZE = Player.BUFFER_SIZE * 100;
 		private Chord chord;
 		private EnvelopeStage envelopeStage;
 		private double volume;

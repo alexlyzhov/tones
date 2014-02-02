@@ -95,15 +95,14 @@ public class ComposingPane extends VBox {
 	            public void handle(ActionEvent event) {
 	            	try {
 	            		double doubleValue = Double.parseDouble(frequencyField.getText());
-	            		for(Frequency frequency: frequenciesListView.getItems()) {
-	            			if(frequency.getValue() == doubleValue) {
-	            				return;
-	            			}
-	            		}
 	            		Frequency frequency = new Frequency(doubleValue);
+	            		if(frequenciesListView.getItems().contains(frequency)) {
+	            			throw new InvalidDataException();
+	            		}
 	            		frequenciesListView.getItems().add(frequency);
 	            		frequencyField.clear();
-	            	} catch(NumberFormatException ex) {}
+	            	} catch(NumberFormatException ex) {
+	            	} catch(InvalidDataException ex) {}
 	            }
 	        });
 	        frequencyFieldVBox.getChildren().add(frequencyListAddButton);

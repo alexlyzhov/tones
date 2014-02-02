@@ -2,17 +2,21 @@ import javax.sound.sampled.*;
 
 public class Player {
 	public final static AudioFormat.Encoding ENCODING = AudioFormat.Encoding.PCM_SIGNED;
+	public final static boolean BIG_ENDIAN = false;
 	public final static int SAMPLE_RATE = 44100;
 	public final static int SAMPLE_SIZE_IN_BITS = 16;
 	public final static int CHANNELS = 1;
-	public final static int FRAME_SIZE = SAMPLE_SIZE_IN_BITS / 8 * CHANNELS;
 	public final static int FRAME_RATE = SAMPLE_RATE;
-	public final static boolean BIG_ENDIAN = false;
-	public final static int BUFFER_CHUNK_SIZE = FRAME_RATE / 100; //move these buffer things to freq or chord player class
+	public final static int FRAME_SIZE = SAMPLE_SIZE_IN_BITS / 8 * CHANNELS;
+	public final static int BUFFER_CHUNK_SIZE = FRAME_RATE / 100;
 	public final static int BUFFER_SIZE = BUFFER_CHUNK_SIZE * 10;
-	private SourceDataLine sourceDataLine = null;
-	private TrackPlayer trackPlayer = null;
-	private Messages messages = Messages.getInstance(); //there should not be message-interaction with user
+
+	private Messages messages = Messages.getInstance();
+	private SourceDataLine sourceDataLine;
+	private Track track;
+	private ChordPlayer chordPlayer;
+	private boolean finishPlaying;
+	private long startTime;
 
 	public Player() throws InitFailedPlayerException {
 		try {
@@ -29,37 +33,53 @@ public class Player {
 		if(isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
-		trackPlayer = new TrackPlayer(sourceDataLine, track);
-		Thread trackPlayerThread = new Thread(trackPlayer);
-		trackPlayerThread.start();
+		this.track = track;
+		PlayerRunnable playerRunnable = new PlayerRunnable();
+		Thread playerThread = new Thread(playerRunnable);
+		playerThread.start();
+	}
+
+	private class PlayerRunnable implements Runnable {
+		public void run() {
+			startTime = System.currentTimeMillis();
+			sourceDataLine.start();
+			finishPlaying = false;
+			for(int i = 0; (i < track.size()) && (!finishPlaying); i++) {
+				Chord chord = track.getChord(i);
+				chordPlayer = new ChordPlayer(sourceDataLine, chord);
+				chordPlayer.play();
+			}
+			sourceDataLine.stop();
+		}
 	}
 
 	public void stop() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
-		trackPlayer.stop();
+		finishPlaying = true;
+		chordPlayer.stop();
 	}
 
 	public double getTrackDuration() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
-		return trackPlayer.getTrackDuration();
+		return (track.getDuration() / 1000d);
 	}
 
 	public double getTrackPosition() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
-		return trackPlayer.getTrackPosition();
+		return (System.currentTimeMillis() - startTime) / 1000d;
 	}
 
 	public Chord getCurrentChord() throws IllegalActionPlayerException {
 		if(!isPlaying()) {
 			throw new IllegalActionPlayerException();
 		}
-		return trackPlayer.getCurrentChord();
+		return chordPlayer.getChord();
 	}
 
 	public boolean isPlaying() {
