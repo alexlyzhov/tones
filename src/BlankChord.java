@@ -2,7 +2,7 @@ import java.util.List;
 import java.util.Iterator;
 
 public class BlankChord {
-	private List<Frequency> frequencies; //protected
+	private List<Frequency> frequencies;
 	private Messages messages = Messages.getInstance();
 
 	public BlankChord(List<Frequency> frequencies) {
@@ -17,12 +17,14 @@ public class BlankChord {
 		return frequencies;
 	}
 
-	public Frequency getFrequency(int index) { //remove
-		return frequencies.get(index);
-	}
-
-	public int size() { //remove
-		return frequencies.size();
+	public short getData(int frame, double volume) {
+		short result = 0;
+		for(int i = 0; i < frequencies.size(); i++) {
+			Frequency frequency = frequencies.get(i);
+			short data = frequency.getData(frame, volume);
+			result += (data / frequencies.size());
+		}
+		return result;
 	}
 
 	public String toString() {

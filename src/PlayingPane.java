@@ -77,7 +77,7 @@ public class PlayingPane extends VBox {
 			String trackInfoString = "";
 			try {
 				String trackPositionString = String.format("%.1f", player.getCurrentPosition());
-				String trackDurationString = String.format("%.1f", player.getSecondsDuration());
+				String trackDurationString = String.format("%.1f", player.getSecondsDuration()); //play created track for an exact amount of time
 				trackInfoString = trackPositionString + " / " + trackDurationString;
 			} catch(IllegalActionPlayerException ex) {}
 			trackInfo.setText(trackInfoString);
