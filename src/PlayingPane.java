@@ -18,15 +18,16 @@ public class PlayingPane extends VBox {
 		this.composingPane = composingPane;
 
         HBox buttonsHBox = new HBox();
+        buttonsHBox.setSpacing(5);
 		Button playButton = new Button(messages.getMessage("play"));
-		//style buttons and pane; create new pause button
-		// playButton.setStyle("-fx-font: 22 arial; -fx-base: #b6e7c9;");
+		playButton.setStyle("-fx-font: 22 arial; -fx-base: #b6e7c9;");
 		playButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
             	playButtonAction();
             }
         });
 		Button stopButton = new Button(messages.getMessage("stop"));
+		stopButton.setStyle("-fx-font: 22 arial; -fx-base: #db7093;");
 		stopButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
             	stopButtonAction();
@@ -36,17 +37,21 @@ public class PlayingPane extends VBox {
         buttonsHBox.setAlignment(Pos.CENTER);
         getChildren().add(buttonsHBox);
 
-        trackInfo = new Label(""); //progress bar and more nice data displaying
+        trackInfo = new Label(""); //progress bar and nicer data displaying
         chordInfo = new Label("");
         getChildren().addAll(trackInfo, chordInfo);
 	}
 
 	private void playButtonAction() {
 		try {
-			Track newTrack = composingPane.createTrack();
-			player = new Player(newTrack);
-			player.play();
-			startInfoUpdateCycle();
+			if((player == null) || (!player.isActive())) {
+				Track newTrack = composingPane.createTrack();
+				player = new Player(newTrack);
+				player.play();
+				startInfoUpdateCycle();
+			} else {
+				player.play();
+			}
 		} catch(DialogException ex) {
 			ex.showDialog();
 		} catch(IllegalActionPlayerException ex) {}
@@ -61,7 +66,7 @@ public class PlayingPane extends VBox {
 	private void startInfoUpdateCycle() {
 		(new Thread() {
 			public void run() {
-				while(player.isPlaying()) {
+				while(player.isActive()) {
 					Platform.runLater(new InfoUpdateRunnable());
 					try {
 						Thread.sleep(50);

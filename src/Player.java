@@ -11,7 +11,7 @@ public class Player extends Track {
 	public final static AudioFormat AUDIO_FORMAT = new AudioFormat(ENCODING, SAMPLE_RATE, SAMPLE_SIZE_IN_BITS, CHANNELS, FRAME_SIZE, FRAME_RATE, BIG_ENDIAN);
 
 	private Messages messages = Messages.getInstance();
-	private boolean playing;
+	private boolean active;
 	private ChordPlayer chordPlayer;
 	private long startTime;
 
@@ -20,47 +20,47 @@ public class Player extends Track {
 	}
 
 	public void play() throws IllegalActionPlayerException {
-		if(isPlaying()) {
-			throw new IllegalActionPlayerException();
-		}
-		startTime = System.currentTimeMillis();
-		playing = true;
-		(new Thread() {
-			public void run() {
-				for(int i = 0; (i < chords.size()) && playing; i++) {
-					Chord chord = chords.get(i);
-					chordPlayer = new ChordPlayer(chord);
-					chordPlayer.play();
-				}
-				playing = false;
+			if(isActive()) {
+				throw new IllegalActionPlayerException();
 			}
-		}).start();
+			startTime = System.currentTimeMillis();
+			active = true;
+			(new Thread() {
+				public void run() {
+					for(int i = 0; (i < chords.size()) && active; i++) {
+						Chord chord = chords.get(i);
+						chordPlayer = new ChordPlayer(chord);
+						chordPlayer.play();
+					}
+					active = false;
+				}
+			}).start();
 	}
 
 	public void stop() throws IllegalActionPlayerException {
-		if(!isPlaying()) {
+		if(!isActive()) {
 			throw new IllegalActionPlayerException();
 		}
-		playing = false;
+		active = false;
 		chordPlayer.stop();
 	}
 
 	public double getCurrentPosition() throws IllegalActionPlayerException {
-		if(!isPlaying()) {
+		if(!isActive()) {
 			throw new IllegalActionPlayerException();
 		}
 		return (System.currentTimeMillis() - startTime) / 1000d;
 	}
 
 	public Chord getCurrentChord() throws IllegalActionPlayerException {
-		if(!isPlaying()) {
+		if(!isActive()) {
 			throw new IllegalActionPlayerException();
 		}
 		if(chordPlayer == null) return null;
 		return chordPlayer.playingIsActive() ? chordPlayer.getChord() : null;
 	}
 
-	public boolean isPlaying() {
-		return playing;
+	public boolean isActive() {
+		return active;
 	}
 }

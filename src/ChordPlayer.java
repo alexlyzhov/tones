@@ -7,9 +7,10 @@ import java.util.ArrayList;
 public class ChordPlayer implements Runnable {
 	private Chord chord;
 	private Thread playingThread;
-	private boolean playing;
+	private boolean playing, paused;
 	private byte[] byteData;
 	private Clip clip;
+	private long pausedTimeInterval, pausedTime, pausedInitTime;
 
 	public ChordPlayer(Chord chord) {
 		this.chord = chord;
@@ -42,8 +43,36 @@ public class ChordPlayer implements Runnable {
 		} catch(InterruptedException ex) {ex.printStackTrace();}
 	}
 
+	// public void pause() {
+	// 	paused = true;
+	// 	pausedInitTime = System.currentTimeMillis();
+	// 	clip.stop();
+	// 	(new Thread() {
+	// 		public void run() {
+	// 			synchronized(playingThread) {
+	// 				while(paused) {
+	// 					try {
+	// 						playingThread.wait();
+	// 					} catch(InterruptedException ex) {ex.printStackTrace();}
+	// 				}
+	// 			}
+	// 		}
+	// 	}).start();
+	// }
+
+	// public void revive() {
+	// 	paused = false;
+	// 	pausedTime += (System.currentTimeMillis() - pausedInitTime);
+	// 	pausedInitTime = 0;
+	// 	clip.start();
+	// 	synchronized(playingThread) {
+	// 		playingThread.notifyAll();
+	// 	}
+	// }
+
 	public void stop() {
 		playing = false;
+		clip.close();
 		playingThread.interrupt();
 	}
 
@@ -57,7 +86,10 @@ public class ChordPlayer implements Runnable {
 			clip.open(Player.AUDIO_FORMAT, byteData, 0, byteData.length);
 			clip.setFramePosition(0);
 			clip.start();
-			sleep(clip.getMicrosecondLength() / 1000);
+			long initTime = System.currentTimeMillis();
+			while(System.currentTimeMillis() - initTime - pausedTime - (pausedInitTime == 0 ? 0 : System.currentTimeMillis() - pausedInitTime)
+				< clip.getMicrosecondLength() / 1000);
+			// sleep(clip.getMicrosecondLength() / 1000);
 		} catch(LineUnavailableException ex) {ex.printStackTrace();}
 
 		if(!playing) {

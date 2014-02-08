@@ -7,61 +7,16 @@ import javafx.geometry.*;
 import javafx.beans.value.*;
 
 public class ComposingPane extends VBox {
+	private final TextField frequencyField = new TextField();
 	private MillisecondsSlider durationSlider, innerDelaySlider, chordFadeDurationSlider, trackFadeDurationSlider;
 	private ListView<BlankChord> chordsListView;
 	private Messages messages = Messages.getInstance();
 
 	public ComposingPane() {
 		setSpacing(5);
-
-	// private RadioButton harmonicSeriesRadioButton, equalTemperamentRadioButton; //convert to toggleButton; refactor createTrack method at first
-
-		// ToggleGroup toggleGroup = new ToggleGroup();
-		// harmonicSeriesRadioButton = new RadioButton("Harmonic series");
-		// equalTemperamentRadioButton = new RadioButton("Equal temperament");
-		// harmonicSeriesRadioButton.setToggleGroup(toggleGroup);
-		// equalTemperamentRadioButton.setToggleGroup(toggleGroup);
-		// getChildren().add(harmonicSeriesRadioButton);
-		// getChildren().add(equalTemperamentRadioButton);
-		// harmonicSeriesRadioButton.fire();
-
-		// ToneSystem toneSystem = harmonicSeriesRadioButton.isSelected() ? ToneSystem.HARMONIC : ToneSystem.TEMPERED;
-
-		// Chord chord = new Chord();
-		// chordsList.add(chord);
-		// double prev = 0;
-		// String[] tokens = frequencyField.getText().split(" ");
-		// for(String token: tokens) {
-		// 	if(!token.equals("")) { //process empty strings earlier
-		// 		if(token.equals(".")) {
-		// 			chord = new Chord();
-		// 			chordsList.add(chord);
-		// 		} else {
-		// 			try {
-		// 				double freq = 0;
-		// 				if(token.endsWith("s")) { //process count operations in a separate frame; use and refactor the ToneSystem class
-		// 					if(prev == 0) {
-		// 						throw new InvalidTrackDataException("Error while parsing track data on the token \"" + token + "\"");
-		// 					}
-		// 					int semitones = Integer.parseInt(token.substring(0, token.length() - 1));
-		// 					freq = toneSystem.countFrequency(prev, semitones);
-		// 				} else {
-		// 					freq = Double.parseDouble(token);
-		// 				}
-		// 				Frequency frequency = new Frequency(freq);
-		// 				chord.add(frequency);
-		// 				prev = freq;
-		// 			} catch(NumberFormatException ex) {
-		// 				throw new InvalidTrackDataException("Error while parsing track data on the token \"" + token + "\"");
-		// 			}
-		// 		}
-		// 	}
-		// }
-
 		ChordsComposingPane chordsComposingPane = new ChordsComposingPane();
 		SlidersPane slidersPane = new SlidersPane();
-		getChildren().addAll(chordsComposingPane, new Separator(), slidersPane);
-		
+		getChildren().addAll(chordsComposingPane, slidersPane);
 	}
 
 	public Track createTrack() throws InvalidDataException {
@@ -77,6 +32,10 @@ public class ComposingPane extends VBox {
 		return track;
 	}
 
+	public TextField getFrequencyField() {
+		return frequencyField;
+	}
+
 	private class ChordsComposingPane extends HBox {
 		private ListView<Frequency> frequenciesListView; //create a new abstract ListView class with getAddButton and getRemoveButton methods
 
@@ -86,7 +45,6 @@ public class ComposingPane extends VBox {
 			VBox frequencyFieldVBox = new VBox();
 			frequencyFieldVBox.setSpacing(3);
 
-			final TextField frequencyField = new TextField();
 			frequencyField.setPromptText(messages.getMessage("newFrequency"));
 			frequencyFieldVBox.getChildren().add(frequencyField);
 

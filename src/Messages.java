@@ -15,6 +15,7 @@ public class Messages {
 
 	private Messages() {
 		locale = Locale.getDefault();
+		locale = new Locale("ru", "RU");
 		bundle = ResourceBundle.getBundle("bundles.Messages", locale);
 	}
 
